@@ -137,3 +137,98 @@ TEST_F(crc16_ccittFixture, crc16_ccitt_auto_2352bytes)
 
     EXPECT_EQ(crc, EXPECTED_CRC16_CCITT_2352BYTES);
 }
+
+#if defined(__x86_64__) || defined(__amd64) || defined(_M_AMD64) || defined(_M_X64) || defined(__I386__) || \
+defined(__i386__) || defined(__THW_INTEL) || defined(_M_IX86)
+
+TEST_F(crc16_ccittFixture, crc16_ccitt_clmul)
+{
+    if(!have_clmul()) return;
+
+    crc16_ccitt_ctx *ctx = crc16_ccitt_init();
+    uint16_t         crc;
+
+    EXPECT_NE(ctx, nullptr);
+
+    crc16_ccitt_update_clmul(ctx, buffer, 1048576);
+    crc16_ccitt_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_CCITT);
+}
+
+TEST_F(crc16_ccittFixture, crc16_ccitt_clmul_misaligned)
+{
+    if(!have_clmul()) return;
+
+    crc16_ccitt_ctx *ctx = crc16_ccitt_init();
+    uint16_t         crc;
+
+    EXPECT_NE(ctx, nullptr);
+
+    crc16_ccitt_update_clmul(ctx, buffer_misaligned + 1, 1048576);
+    crc16_ccitt_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_CCITT);
+}
+
+TEST_F(crc16_ccittFixture, crc16_ccitt_clmul_15bytes)
+{
+    if(!have_clmul()) return;
+
+    crc16_ccitt_ctx *ctx = crc16_ccitt_init();
+    uint16_t         crc;
+
+    EXPECT_NE(ctx, nullptr);
+
+    crc16_ccitt_update_clmul(ctx, buffer, 15);
+    crc16_ccitt_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_CCITT_15BYTES);
+}
+
+TEST_F(crc16_ccittFixture, crc16_ccitt_clmul_31bytes)
+{
+    if(!have_clmul()) return;
+
+    crc16_ccitt_ctx *ctx = crc16_ccitt_init();
+    uint16_t         crc;
+
+    EXPECT_NE(ctx, nullptr);
+
+    crc16_ccitt_update_clmul(ctx, buffer, 31);
+    crc16_ccitt_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_CCITT_31BYTES);
+}
+
+TEST_F(crc16_ccittFixture, crc16_ccitt_clmul_63bytes)
+{
+    if(!have_clmul()) return;
+
+    crc16_ccitt_ctx *ctx = crc16_ccitt_init();
+    uint16_t         crc;
+
+    EXPECT_NE(ctx, nullptr);
+
+    crc16_ccitt_update_clmul(ctx, buffer, 63);
+    crc16_ccitt_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_CCITT_63BYTES);
+}
+
+TEST_F(crc16_ccittFixture, crc16_ccitt_clmul_2352bytes)
+{
+    if(!have_clmul()) return;
+
+    crc16_ccitt_ctx *ctx = crc16_ccitt_init();
+    uint16_t         crc;
+
+    EXPECT_NE(ctx, nullptr);
+
+    crc16_ccitt_update_clmul(ctx, buffer, 2352);
+    crc16_ccitt_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_CCITT_2352BYTES);
+}
+
+#endif

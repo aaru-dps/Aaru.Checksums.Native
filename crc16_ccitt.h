@@ -22,9 +22,10 @@
 typedef struct
 {
     uint16_t crc;
+    int      seen_first;
 } crc16_ccitt_ctx;
 
-const uint16_t crc16_ccitt_table[8][256] = {
+static const uint16_t crc16_ccitt_table[8][256] = {
     {0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50A5, 0x60C6, 0x70E7, 0x8108, 0x9129, 0xA14A, 0xB16B, 0xC18C, 0xD1AD,
      0xE1CE, 0xF1EF, 0x1231, 0x0210, 0x3273, 0x2252, 0x52B5, 0x4294, 0x72F7, 0x62D6, 0x9339, 0x8318, 0xB37B, 0xA35A,
      0xD3BD, 0xC39C, 0xF3FF, 0xE3DE, 0x2462, 0x3443, 0x0420, 0x1401, 0x64E6, 0x74C7, 0x44A4, 0x5485, 0xA56A, 0xB54B,
@@ -183,5 +184,11 @@ AARU_EXPORT crc16_ccitt_ctx *AARU_CALL crc16_ccitt_init();
 AARU_EXPORT int AARU_CALL              crc16_ccitt_update(crc16_ccitt_ctx *ctx, const uint8_t *data, uint32_t len);
 AARU_EXPORT int AARU_CALL              crc16_ccitt_final(crc16_ccitt_ctx *ctx, uint16_t *crc);
 AARU_EXPORT void AARU_CALL             crc16_ccitt_free(crc16_ccitt_ctx *ctx);
+
+#if defined(__x86_64__) || defined(__amd64) || defined(_M_AMD64) || defined(_M_X64) || defined(__I386__) || \
+defined(__i386__) || defined(__THW_INTEL) || defined(_M_IX86)
+AARU_EXPORT TARGET_WITH_CLMUL int AARU_CALL crc16_ccitt_update_clmul(crc16_ccitt_ctx *ctx, const uint8_t *data,
+                                                                     uint32_t         len);
+#endif
 
 #endif  // AARU_CHECKSUMS_NATIVE_CRC16_H
