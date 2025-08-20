@@ -24,7 +24,7 @@ typedef struct
     uint16_t crc;
 } crc16_ctx;
 
-const uint16_t crc16_table[8][256] = {
+static const uint16_t crc16_table[8][256] = {
     {0x0000, 0xC0C1, 0xC181, 0x0140, 0xC301, 0x03C0, 0x0280, 0xC241, 0xC601, 0x06C0, 0x0780, 0xC741, 0x0500, 0xC5C1,
      0xC481, 0x0440, 0xCC01, 0x0CC0, 0x0D80, 0xCD41, 0x0F00, 0xCFC1, 0xCE81, 0x0E40, 0x0A00, 0xCAC1, 0xCB81, 0x0B40,
      0xC901, 0x09C0, 0x0880, 0xC841, 0xD801, 0x18C0, 0x1980, 0xD941, 0x1B00, 0xDBC1, 0xDA81, 0x1A40, 0x1E00, 0xDEC1,
@@ -183,5 +183,10 @@ AARU_EXPORT crc16_ctx *AARU_CALL crc16_init();
 AARU_EXPORT int AARU_CALL        crc16_update(crc16_ctx *ctx, const uint8_t *data, uint32_t len);
 AARU_EXPORT int AARU_CALL        crc16_final(crc16_ctx *ctx, uint16_t *crc);
 AARU_EXPORT void AARU_CALL       crc16_free(crc16_ctx *ctx);
+
+#if defined(__x86_64__) || defined(__amd64) || defined(_M_AMD64) || defined(_M_X64) || defined(__I386__) || \
+defined(__i386__) || defined(__THW_INTEL) || defined(_M_IX86)
+AARU_EXPORT int AARU_CALL crc16_update_avx2(crc16_ctx *ctx, const uint8_t *data, uint32_t len);
+#endif
 
 #endif  // AARU_CHECKSUMS_NATIVE_CRC16_H

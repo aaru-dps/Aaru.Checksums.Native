@@ -8,6 +8,8 @@
 
 #include "../library.h"
 #include "../crc16.h"
+#include "../simd.h"
+#include "/home/claunia/Development/Aaru/Aaru.Checksums.Native/simd.h"
 #include "gtest/gtest.h"
 
 #define EXPECTED_CRC16           0x2d6d
@@ -137,3 +139,98 @@ TEST_F(crc16Fixture, crc16_auto_2352bytes)
 
     EXPECT_EQ(crc, EXPECTED_CRC16_2352BYTES);
 }
+
+#if defined(__x86_64__) || defined(__amd64) || defined(_M_AMD64) || defined(_M_X64) || defined(__I386__) || \
+defined(__i386__) || defined(__THW_INTEL) || defined(_M_IX86)
+
+TEST_F(crc16Fixture, crc16_avx2)
+{
+    if(!have_avx2()) return;
+
+    crc16_ctx *ctx = crc16_init();
+    uint16_t   crc;
+
+    EXPECT_NE(ctx, nullptr);
+
+    crc16_update_avx2(ctx, buffer, 1048576);
+    crc16_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16);
+}
+
+TEST_F(crc16Fixture, crc16_avx2_misaligned)
+{
+    if(!have_avx2()) return;
+
+    crc16_ctx *ctx = crc16_init();
+    uint16_t   crc;
+
+    EXPECT_NE(ctx, nullptr);
+
+    crc16_update_avx2(ctx, buffer_misaligned + 1, 1048576);
+    crc16_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16);
+}
+
+TEST_F(crc16Fixture, crc16_avx2_15bytes)
+{
+    if(!have_avx2()) return;
+
+    crc16_ctx *ctx = crc16_init();
+    uint16_t   crc;
+
+    EXPECT_NE(ctx, nullptr);
+
+    crc16_update_avx2(ctx, buffer, 15);
+    crc16_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_15BYTES);
+}
+
+TEST_F(crc16Fixture, crc16_avx2_31bytes)
+{
+    if(!have_avx2()) return;
+
+    crc16_ctx *ctx = crc16_init();
+    uint16_t   crc;
+
+    EXPECT_NE(ctx, nullptr);
+
+    crc16_update_avx2(ctx, buffer, 31);
+    crc16_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_31BYTES);
+}
+
+TEST_F(crc16Fixture, crc16_avx2_63bytes)
+{
+    if(!have_avx2()) return;
+
+    crc16_ctx *ctx = crc16_init();
+    uint16_t   crc;
+
+    EXPECT_NE(ctx, nullptr);
+
+    crc16_update_avx2(ctx, buffer, 63);
+    crc16_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_63BYTES);
+}
+
+TEST_F(crc16Fixture, crc16_avx2_2352bytes)
+{
+    if(!have_avx2()) return;
+
+    crc16_ctx *ctx = crc16_init();
+    uint16_t   crc;
+
+    EXPECT_NE(ctx, nullptr);
+
+    crc16_update_avx2(ctx, buffer, 2352);
+    crc16_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_2352BYTES);
+}
+
+#endif

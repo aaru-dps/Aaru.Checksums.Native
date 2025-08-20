@@ -100,7 +100,7 @@ static inline uint16_t crc16_block_slice_by_8(const uint8_t *p, size_t n)
 }
 
 AARU_EXPORT TARGET_WITH_CLMUL int AARU_CALL crc16_ccitt_update_clmul(crc16_ccitt_ctx *ctx, const uint8_t *data,
-                                                                     uint32_t         len);
+                                                                     uint32_t         len)
 {
     if(!ctx || !data) return -1;
 
