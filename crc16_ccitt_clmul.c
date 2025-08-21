@@ -19,6 +19,7 @@
 #if defined(__x86_64__) || defined(__amd64) || defined(_M_AMD64) || defined(_M_X64) || defined(__I386__) || \
 defined(__i386__) || defined(__THW_INTEL) || defined(_M_IX86)
 
+#include <bits/stdint-uintn.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <immintrin.h>   // for _mm_clmulepi64_si128
@@ -38,10 +39,10 @@ TARGET_WITH_CLMUL static inline uint32_t clmul16(uint16_t a, uint16_t b)
     __m128i vb   = _mm_set_epi64x(0, (uint64_t)b);
     __m128i prod = _mm_clmulepi64_si128(va, vb, 0x00);
 #if defined(_M_X64) || defined(__x86_64__)
-return (uint32_t)_mm_cvtsi128_si64(prod);
+    return (uint32_t)_mm_cvtsi128_si64(prod);
 #else
-// On 32-bit targets, extract low 64 then cast.
-uint64_t low64; _mm_storel_epi64((__m128i *) &low64, prod);return (uint32_t)low64;
+    // On 32-bit targets, extract low 64 then cast.
+    uint64_t low64; _mm_storel_epi64((__m128i *)&low64, prod); return (uint32_t)low64;
 #endif
 }
 
@@ -96,30 +97,30 @@ static inline uint16_t crc16_block_slice_by_8(const uint8_t *p, size_t n)
     while(n--) c = (uint16_t)((c << 8) ^ crc16_ccitt_table[0][((c >> 8) ^ *p++) & 0xFF]);
 
     return c;
-}AARU_EXPORT TARGET_WITH_CLMUL int AARU_CALL crc16_ccitt_update_clmul(crc16_ccitt_ctx *ctx, const uint8_t *data,
-                                                                      uint32_t         len)
+}
+
+AARU_EXPORT TARGET_WITH_CLMUL int AARU_CALL crc16_ccitt_update_clmul(crc16_ccitt_ctx *ctx, const uint8_t *data,
+                                                                     uint32_t         len)
 {
     if(!ctx || !data) return -1;
 
-#if defined(__x86_64__) || defined(__amd64) || defined(_M_AMD64) || defined(_M_X64) || defined(__I386__) || \
-defined(__i386__) || defined(__THW_INTEL) || defined(_M_IX86)
-if(have_clmul())return crc16_ccitt_update_clmul(ctx, data, len);
-#endif
+    uint16_t crc = ctx->crc;
 
-uint16_t crc = ctx->crc;
-
-// align to 4 bytes, byte-at-a-time.
-uintptr_t unaligned_length = (4 - (((uintptr_t)data) & 3)) & 3;while(len&& unaligned_length)
+    // align to 4 bytes, byte-at-a-time.
+    uintptr_t unaligned_length = (4 - (((uintptr_t)data) & 3)) & 3;
+    while(len && unaligned_length)
     {
         crc = (uint16_t)((crc << 8) ^ crc16_ccitt_table[0][((crc >> 8) ^ *data++) & 0xFF]);
         len--;
         unaligned_length--;
     }
 
-// Process large blocks via: crc = mul(crc, x^(8*B)) ^ crc_block(0, block)
-// Choose a block size that balances pow() cost and locality.
-const size_t   BLOCK     = 64; // 64 bytes per block
-const uint16_t pow_block = gf2_pow_x8(BLOCK);while(len>= BLOCK)
+    // Process large blocks via: crc = mul(crc, x^(8*B)) ^ crc_block(0, block)
+    // Choose a block size that balances pow() cost and locality.
+    const size_t   BLOCK     = 64; // 64 bytes per block
+    const uint16_t pow_block = gf2_pow_x8(BLOCK);
+
+    while(len >= BLOCK)
     {
         uint16_t block_crc = crc16_block_slice_by_8(data, BLOCK);
         uint16_t folded    = gf2_mul16_mod(crc, pow_block);
@@ -129,8 +130,9 @@ const uint16_t pow_block = gf2_pow_x8(BLOCK);while(len>= BLOCK)
         len -= BLOCK;
     }
 
-// Handle the remainder: you can either combine once more, or fall back bytewise.
-// To stay faithful and still leverage PCLMUL combine, do one more combine for the tail.if(len>= 8)
+    // Handle the remainder: you can either combine once more, or fall back bytewise.
+    // To stay faithful and still leverage PCLMUL combine, do one more combine for the tail.
+    if(len >= 8)
     {
         // Combine full 8-byte chunks with a single pow per chunk length (8).
         const uint16_t pow8 = gf2_pow_x8(8);
@@ -145,7 +147,11 @@ const uint16_t pow_block = gf2_pow_x8(BLOCK);while(len>= BLOCK)
         }
     }
 
-// Final tiny tail (<=7 bytes)while(len--) crc                                  = (uint16_t)(
-    (crc << 8) ^ crc16_ccitt_table[0][((crc >> 8) ^ *data++) & 0xFF]); ctx->crc = crc;return 0;}
+    // Final tiny tail (<=7 bytes)
+    while(len--) crc = (uint16_t)((crc << 8) ^ crc16_ccitt_table[0][((crc >> 8) ^ *data++) & 0xFF]);
+
+    ctx->crc = crc;
+    return 0;
+}
 
 #endif
