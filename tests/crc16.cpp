@@ -223,3 +223,96 @@ TEST_F(crc16Fixture, crc16_avx2)
 }
 
 #endif
+
+#if defined(__aarch64__) || defined(_M_ARM64) || defined(__arm__) || defined(_M_ARM)
+TEST_F(crc16Fixture, crc16_vmull)
+{
+    if(!have_neon()) return;
+
+    crc16_ctx *ctx = crc16_init();
+    uint16_t   crc;
+
+    EXPECT_NE(ctx, nullptr);
+
+    crc16_update_vmull(ctx, buffer, 1048576);
+    crc16_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16);
+}
+
+TEST_F(crc16Fixture, crc16_vmull_misaligned)
+{
+    if(!have_neon()) return;
+
+    crc16_ctx *ctx = crc16_init();
+    uint16_t   crc;
+
+    EXPECT_NE(ctx, nullptr);
+
+    crc16_update_vmull(ctx, buffer_misaligned + 1, 1048576);
+    crc16_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16);
+}
+
+TEST_F(crc16Fixture, crc16_vmull_15bytes)
+{
+    if(!have_neon()) return;
+
+    crc16_ctx *ctx = crc16_init();
+    uint16_t   crc;
+
+    EXPECT_NE(ctx, nullptr);
+
+    crc16_update_vmull(ctx, buffer, 15);
+    crc16_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_15BYTES);
+}
+
+TEST_F(crc16Fixture, crc16_vmull_31bytes)
+{
+    if(!have_neon()) return;
+
+    crc16_ctx *ctx = crc16_init();
+    uint16_t   crc;
+
+    EXPECT_NE(ctx, nullptr);
+
+    crc16_update_vmull(ctx, buffer, 31);
+    crc16_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_31BYTES);
+}
+
+TEST_F(crc16Fixture, crc16_vmull_63bytes)
+{
+    if(!have_neon()) return;
+
+    crc16_ctx *ctx = crc16_init();
+    uint16_t   crc;
+
+    EXPECT_NE(ctx, nullptr);
+
+    crc16_update_vmull(ctx, buffer, 63);
+    crc16_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_63BYTES);
+}
+
+TEST_F(crc16Fixture, crc16_vmull_2352bytes)
+{
+    if(!have_neon()) return;
+
+    crc16_ctx *ctx = crc16_init();
+    uint16_t   crc;
+
+    EXPECT_NE(ctx, nullptr);
+
+    crc16_update_vmull(ctx, buffer, 2352);
+    crc16_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_2352BYTES);
+}
+
+#endif

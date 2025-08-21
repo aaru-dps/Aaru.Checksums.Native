@@ -189,4 +189,8 @@ defined(__i386__) || defined(__THW_INTEL) || defined(_M_IX86)
 AARU_EXPORT int AARU_CALL crc16_update_avx2(crc16_ctx *ctx, const uint8_t *data, uint32_t len);
 #endif
 
+#if defined(__aarch64__) || defined(_M_ARM64) || defined(__arm__) || defined(_M_ARM)
+AARU_EXPORT TARGET_WITH_NEON int AARU_CALL crc16_update_vmull(crc16_ctx *ctx, const uint8_t *data, uint32_t len);
+#endif
+
 #endif  // AARU_CHECKSUMS_NATIVE_CRC16_H

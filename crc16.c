@@ -67,13 +67,16 @@ AARU_EXPORT int AARU_CALL crc16_update(crc16_ctx *ctx, const uint8_t *data, uint
 
 #if defined(__x86_64__) || defined(__amd64) || defined(_M_AMD64) || defined(_M_X64) || defined(__I386__) || \
 defined(__i386__) || defined(__THW_INTEL) || defined(_M_IX86)
-    if(have_avx2())
-        return crc16_update_avx2(ctx, data, len);
+    if(have_avx2()) return crc16_update_avx2(ctx, data, len);
+#endif
+
+#if defined(__aarch64__) || defined(_M_ARM64) || defined(__arm__) || defined(_M_ARM)
+    if(have_neon()) return crc16_update_vmull(ctx, data, len);
 #endif
 
     uint16_t        crc;
     const uint32_t *current;
-    const uint8_t  *current_char     = data;
+    const uint8_t * current_char     = data;
     const size_t    unroll           = 4;
     const size_t    bytes_at_once    = 8 * unroll;
     uintptr_t       unaligned_length = (4 - (((uintptr_t)current_char) & 3)) & 3;
@@ -98,9 +101,9 @@ defined(__i386__) || defined(__THW_INTEL) || defined(_M_IX86)
             uint32_t two = *current++;
 
             // TODO: Big endian!
-            crc = crc16_table[0][(two >> 24) & 0xFF] ^ crc16_table[1][(two >> 16) & 0xFF] ^
-                  crc16_table[2][(two >> 8) & 0xFF] ^ crc16_table[3][two & 0xFF] ^ crc16_table[4][(one >> 24) & 0xFF] ^
-                  crc16_table[5][(one >> 16) & 0xFF] ^ crc16_table[6][(one >> 8) & 0xFF] ^ crc16_table[7][one & 0xFF];
+            crc = crc16_table[0][(two >> 24) & 0xFF] ^ crc16_table[1][(two >> 16) & 0xFF] ^ crc16_table[2][
+                      (two >> 8) & 0xFF] ^ crc16_table[3][two & 0xFF] ^ crc16_table[4][(one >> 24) & 0xFF] ^ crc16_table
+                  [5][(one >> 16) & 0xFF] ^ crc16_table[6][(one >> 8) & 0xFF] ^ crc16_table[7][one & 0xFF];
         }
 
         len -= bytes_at_once;
@@ -142,7 +145,4 @@ AARU_EXPORT int AARU_CALL crc16_final(crc16_ctx *ctx, uint16_t *crc)
  *
  * @param ctx The CRC-16 checksum context structure, to be freed.
  */
-AARU_EXPORT void AARU_CALL crc16_free(crc16_ctx *ctx)
-{
-    if(ctx) free(ctx);
-}
+AARU_EXPORT void AARU_CALL crc16_free(crc16_ctx *ctx) { if(ctx) free(ctx); }
