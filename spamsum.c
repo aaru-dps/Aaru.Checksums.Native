@@ -28,10 +28,92 @@
 #include "library.h"
 #include "spamsum.h"
 
-static uint8_t b64[] = {0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F, 0x50,
-                        0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5A, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66,
-                        0x67, 0x68, 0x69, 0x6A, 0x6B, 0x6C, 0x6D, 0x6E, 0x6F, 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76,
-                        0x77, 0x78, 0x79, 0x7A, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x2B, 0x2F};
+#if defined(__x86_64__) || defined(__amd64) || defined(_M_AMD64) || defined(_M_X64) || defined(__I386__) || \
+defined(__i386__) || defined(__THW_INTEL) || defined(_M_IX86)
+    #include <immintrin.h>
+#endif
+
+#if defined(_MSC_VER)
+#define ALWAYS_INLINE __forceinline
+#define LIKELY(x)     (x)
+#define UNLIKELY(x)   (x)
+#else
+#define ALWAYS_INLINE __attribute__((always_inline)) inline
+#define LIKELY(x)     __builtin_expect(!!(x), 1)
+#define UNLIKELY(x)   __builtin_expect(!!(x), 0)
+#endif
+
+static ALWAYS_INLINE uint32_t fastmod3_u32(uint32_t x)
+{
+    // q = floor(x/3) via multiplicative inverse (2^33 / 3)
+    uint32_t q = (uint32_t)(((uint64_t)x * 0xAAAAAAABu) >> 33);
+    return x - 3u * q;
+}
+
+static uint8_t b64[] = {0x41,
+                        0x42,
+                        0x43,
+                        0x44,
+                        0x45,
+                        0x46,
+                        0x47,
+                        0x48,
+                        0x49,
+                        0x4A,
+                        0x4B,
+                        0x4C,
+                        0x4D,
+                        0x4E,
+                        0x4F,
+                        0x50,
+                        0x51,
+                        0x52,
+                        0x53,
+                        0x54,
+                        0x55,
+                        0x56,
+                        0x57,
+                        0x58,
+                        0x59,
+                        0x5A,
+                        0x61,
+                        0x62,
+                        0x63,
+                        0x64,
+                        0x65,
+                        0x66,
+                        0x67,
+                        0x68,
+                        0x69,
+                        0x6A,
+                        0x6B,
+                        0x6C,
+                        0x6D,
+                        0x6E,
+                        0x6F,
+                        0x70,
+                        0x71,
+                        0x72,
+                        0x73,
+                        0x74,
+                        0x75,
+                        0x76,
+                        0x77,
+                        0x78,
+                        0x79,
+                        0x7A,
+                        0x30,
+                        0x31,
+                        0x32,
+                        0x33,
+                        0x34,
+                        0x35,
+                        0x36,
+                        0x37,
+                        0x38,
+                        0x39,
+                        0x2B,
+                        0x2F};
 
 /**
  * @brief Initializes the SpamSum checksum algorithm.
@@ -69,13 +151,22 @@ AARU_EXPORT spamsum_ctx *AARU_CALL spamsum_init(void)
  */
 AARU_EXPORT int AARU_CALL spamsum_update(spamsum_ctx *ctx, const uint8_t *data, uint32_t len)
 {
-    int i;
     if(!ctx || !data) return -1;
 
-    for(i = 0; i < len; i++) fuzzy_engine_step(ctx, data[i]);
+    const uint8_t *p = data;
+    const uint8_t *e = data + len;
+
+    // 4x unroll; falls through to remainder
+    for(; p + 4 <= e; p += 4)
+    {
+        fuzzy_engine_step(ctx, p[0]);
+        fuzzy_engine_step(ctx, p[1]);
+        fuzzy_engine_step(ctx, p[2]);
+        fuzzy_engine_step(ctx, p[3]);
+    }
+    while(p < e) { fuzzy_engine_step(ctx, *p++); }
 
     ctx->total_size += len;
-
     return 0;
 }
 
@@ -87,84 +178,71 @@ AARU_EXPORT int AARU_CALL spamsum_update(spamsum_ctx *ctx, const uint8_t *data, 
  *
  * @param ctx The SpamSum checksum context structure, to be freed.
  */
-AARU_EXPORT void AARU_CALL spamsum_free(spamsum_ctx *ctx)
-{
-    if(ctx) free(ctx);
-}
+AARU_EXPORT void AARU_CALL spamsum_free(spamsum_ctx *ctx) { if(ctx) free(ctx); }
 
 #define ROLL_SUM(ctx)    ((ctx)->roll.h1 + (ctx)->roll.h2 + (ctx)->roll.h3)
 #define SUM_HASH(c, h)   (((h) * HASH_PRIME) ^ (c));
 #define SSDEEP_BS(index) (MIN_BLOCKSIZE << (index))
 
-FORCE_INLINE void fuzzy_engine_step(spamsum_ctx *ctx, uint8_t c)
-{
+static inline void fuzzy_engine_step(spamsum_ctx *ctx, uint8_t c) {
     uint32_t i;
-    /* At each character we update the rolling hash and the normal hashes.
-     * When the rolling hash hits a reset value then we emit a normal hash
-     * as a element of the signature and reset the normal hash. */
-    roll_hash(ctx, c);
-    uint64_t h = ROLL_SUM(ctx);
 
-    for(i = ctx->bh_start; i < ctx->bh_end; ++i)
-    {
+    // 1. Update rolling hash (scalar, unchanged)
+    roll_hash(ctx, c);
+    uint32_t h = ROLL_SUM(ctx);
+
+    for ( i = ctx->bh_start; i < ctx->bh_end; ++i) {
         ctx->bh[i].h      = SUM_HASH(c, ctx->bh[i].h);
         ctx->bh[i].half_h = SUM_HASH(c, ctx->bh[i].half_h);
     }
 
-    for(i = ctx->bh_start; i < ctx->bh_end; ++i)
-    {
-        /* With growing blocksize almost no runs fail the next test. */
-        if(h % SSDEEP_BS(i) != SSDEEP_BS(i) - 1)
-            /* Once this condition is false for one bs, it is
-             * automatically false for all further bs. I.e. if
-             * h === -1 (mod 2*bs) then h === -1 (mod bs). */
-            break;
+    if (LIKELY(fastmod3_u32(h) != 2u)) return;
 
-        /* We have hit a reset point. We now emit hashes which are
-         * based on all characters in the piece of the message between
-         * the last reset point and this one */
-        if(0 == ctx->bh[i].d_len) fuzzy_try_fork_blockhash(ctx);
+    i = ctx->bh_start;
+    uint64_t mask = (i == 0) ? 0 : (((uint64_t)1u << i) - 1u);
 
-        ctx->bh[i].digest[ctx->bh[i].d_len] = b64[ctx->bh[i].h % 64];
-        ctx->bh[i].half_digest              = b64[ctx->bh[i].half_h % 64];
+    for (; i < ctx->bh_end; ++i) {
+        if (UNLIKELY(((uint64_t)h & mask) != mask)) break;
 
-        if(ctx->bh[i].d_len < SPAMSUM_LENGTH - 1)
-        {
-            /* We can have a problem with the tail overflowing. The
-             * easiest way to cope with this is to only reset the
-             * normal hash if we have room for more characters in
-             * our signature. This has the effect of combining the
-             * last few pieces of the message into a single piece
-             * */
+        if (ctx->bh[i].d_len == 0)
+            fuzzy_try_fork_blockhash(ctx);
+
+        uint8_t ch = b64[ctx->bh[i].h % 64];
+        ctx->bh[i].digest[ctx->bh[i].d_len] = ch;
+        ctx->bh[i].half_digest = b64[ctx->bh[i].half_h % 64];
+
+        if (ctx->bh[i].d_len < SPAMSUM_LENGTH - 1) {
             ctx->bh[i].digest[++ctx->bh[i].d_len] = 0;
-            ctx->bh[i].h                          = HASH_INIT;
+            ctx->bh[i].h = HASH_INIT;
 
-            if(ctx->bh[i].d_len >= SPAMSUM_LENGTH / 2) continue;
-
-            ctx->bh[i].half_h      = HASH_INIT;
-            ctx->bh[i].half_digest = 0;
-        }
-        else
+            if (ctx->bh[i].d_len < SPAMSUM_LENGTH / 2) {
+                ctx->bh[i].half_h = HASH_INIT;
+                ctx->bh[i].half_digest = 0;
+            }
+        } else {
             fuzzy_try_reduce_blockhash(ctx);
+        }
+        mask = (mask << 1) | 1u;
     }
 }
 
-FORCE_INLINE void roll_hash(spamsum_ctx *ctx, uint8_t c)
+ALWAYS_INLINE void roll_hash(spamsum_ctx *ctx, uint8_t c)
 {
+    // compute window index once
+    uint32_t n   = ctx->roll.n;
+    uint32_t idx = n % ROLLING_WINDOW;
+    uint8_t  old = ctx->roll.window[idx];
+
     ctx->roll.h2 -= ctx->roll.h1;
-    ctx->roll.h2 += ROLLING_WINDOW * c;
+    ctx->roll.h2 += (uint32_t)ROLLING_WINDOW * c;
 
     ctx->roll.h1 += c;
-    ctx->roll.h1 -= ctx->roll.window[ctx->roll.n % ROLLING_WINDOW];
+    ctx->roll.h1 -= old;
 
-    ctx->roll.window[ctx->roll.n % ROLLING_WINDOW] = c;
-    ctx->roll.n++;
+    ctx->roll.window[idx] = c;
+    ctx->roll.n           = n + 1;
 
-    /* The original spamsum AND'ed this value with 0xFFFFFFFF which
-     * in theory should have no effect. This AND has been removed
-     * for performance (jk) */
-    ctx->roll.h3 <<= 5;
-    ctx->roll.h3 ^= c;
+    ctx->roll.h3 = (ctx->roll.h3 << 5) ^ c;
 }
 
 FORCE_INLINE void fuzzy_try_reduce_blockhash(spamsum_ctx *ctx)
@@ -201,6 +279,17 @@ FORCE_INLINE void fuzzy_try_fork_blockhash(spamsum_ctx *ctx)
     ctx->bh[nbh].half_digest = 0;
     ctx->bh[nbh].d_len       = 0;
     ++ctx->bh_end;
+}
+
+static ALWAYS_INLINE char *u32toa(uint32_t v, char *buf_end)
+{
+    // write digits backwards, return new head
+    do
+    {
+        *--buf_end = (char)('0' + (v % 10));
+        v /= 10;
+    } while(v);
+    return buf_end;
 }
 
 /**
@@ -244,17 +333,20 @@ AARU_EXPORT int AARU_CALL spamsum_final(spamsum_ctx *ctx, uint8_t *result)
 
     // assert(!(bi > 0 && ctx->bh[bi].d_len < SPAMSUM_LENGTH / 2));
 
-    int i = snprintf((char *)result, (size_t)remain, "%lu:", (unsigned long)SSDEEP_BS(bi));
+    {
+        uint32_t bs    = SSDEEP_BS(bi);
+        char *   p     = (char *)result;
+        char *   end   = p + remain;
+        char *   start = u32toa(bs, end);
+        size_t   n     = (size_t)(end - start);
+        memmove(p, start, n);
+        p[n] = ':'; // add colon
+        p += n + 1;
+        remain -= (int)(n + 1);
+        result = (uint8_t *)p;
+    }
 
-    if(i <= 0) /* Maybe snprintf has set errno here? */
-        return -1;
-
-    // assert(i < remain);
-
-    remain -= i;
-    result += i;
-
-    i = (int)ctx->bh[bi].d_len;
+    int i = (int)ctx->bh[bi].d_len;
 
     // assert(i <= remain);
 
@@ -297,8 +389,7 @@ AARU_EXPORT int AARU_CALL spamsum_final(spamsum_ctx *ctx, uint8_t *result)
         ++bi;
         i = (int)ctx->bh[bi].d_len;
 
-        if(i <= remain)
-            ;
+        if(i <= remain);
 
         memcpy(result, ctx->bh[bi].digest, (size_t)i);
         result += i;
