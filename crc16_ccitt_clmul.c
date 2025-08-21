@@ -104,6 +104,12 @@ AARU_EXPORT TARGET_WITH_CLMUL int AARU_CALL crc16_ccitt_update_clmul(crc16_ccitt
 {
     if(!ctx || !data) return -1;
 
+#if defined(__x86_64__) || defined(__amd64) || defined(_M_AMD64) || defined(_M_X64) || defined(__I386__) || \
+defined(__i386__) || defined(__THW_INTEL) || defined(_M_IX86)
+    if(have_clmul())
+        return crc16_ccitt_update_clmul(ctx, data, len);
+#endif
+
     uint16_t crc = ctx->crc;
 
     // align to 4 bytes, byte-at-a-time.

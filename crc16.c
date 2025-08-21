@@ -20,6 +20,7 @@
 #include <stdlib.h>
 
 #include "library.h"
+#include "simd.h"
 #include "crc16.h"
 
 /**
@@ -63,6 +64,12 @@ AARU_EXPORT int AARU_CALL crc16_update(crc16_ctx *ctx, const uint8_t *data, uint
     // http://sourceforge.net/projects/slicing-by-8/
 
     if(!ctx || !data) return -1;
+
+#if defined(__x86_64__) || defined(__amd64) || defined(_M_AMD64) || defined(_M_X64) || defined(__I386__) || \
+defined(__i386__) || defined(__THW_INTEL) || defined(_M_IX86)
+    if(have_avx2())
+        return crc16_update_avx2(ctx, data, len);
+#endif
 
     uint16_t        crc;
     const uint32_t *current;
