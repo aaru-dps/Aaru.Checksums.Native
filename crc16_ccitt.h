@@ -191,4 +191,11 @@ AARU_EXPORT TARGET_WITH_CLMUL int AARU_CALL crc16_ccitt_update_clmul(crc16_ccitt
                                                                      uint32_t         len);
 #endif
 
+#if defined(__aarch64__) || defined(_M_ARM64) || defined(__arm__) || defined(_M_ARM)
+AARU_EXPORT TARGET_WITH_CRYPTO int AARU_CALL crc16_ccitt_update_pmull(crc16_ccitt_ctx *ctx, const uint8_t *data,
+                                                                      uint32_t         len);
+AARU_EXPORT TARGET_WITH_NEON int AARU_CALL crc16_ccitt_update_vmull(crc16_ccitt_ctx *ctx, const uint8_t *data,
+                                                                    uint32_t         len);
+
+#endif
 #endif  // AARU_CHECKSUMS_NATIVE_CRC16_H

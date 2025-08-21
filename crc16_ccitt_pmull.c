@@ -16,15 +16,14 @@
  * License along with this library; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#if defined(__x86_64__) || defined(__amd64) || defined(_M_AMD64) || defined(_M_X64) || defined(__I386__) || \
-defined(__i386__) || defined(__THW_INTEL) || defined(_M_IX86)
+#if defined(__aarch64__) || defined(_M_ARM64) || defined(__arm__) || defined(_M_ARM)
 
 #include <stdint.h>
 #include <stddef.h>
-#include <immintrin.h>   // for _mm_clmulepi64_si128
-#include <wmmintrin.h>   // some compilers need this for PCLMUL
+#include <arm_neon.h>   // NEON + PMULL (vmull_p64)
 
 #include "library.h"
+#include "simd.h"
 #include "crc16_ccitt.h"
 
 #ifndef CRC16_CCITT_POLY
@@ -32,16 +31,19 @@ defined(__i386__) || defined(__THW_INTEL) || defined(_M_IX86)
 #endif
 
 // Carry-less multiply of two 16-bit values -> 32-bit polynomial product.
-TARGET_WITH_CLMUL static inline uint32_t clmul16(uint16_t a, uint16_t b)
+TARGET_WITH_CRYPTO static inline uint32_t pmull16(uint16_t a, uint16_t b)
 {
-    __m128i va   = _mm_set_epi64x(0, (uint64_t)a);
-    __m128i vb   = _mm_set_epi64x(0, (uint64_t)b);
-    __m128i prod = _mm_clmulepi64_si128(va, vb, 0x00);
-#if defined(_M_X64) || defined(__x86_64__)
-return (uint32_t)_mm_cvtsi128_si64(prod);
+    int i;
+#if defined(__ARM_FEATURE_CRYPTO)
+    // Treat a, b as 64-bit polynomials with only low 16 bits set, then PMULL.
+    poly64_t pa = (poly64_t)(uint64_t)a; poly64_t pb = (poly64_t)(uint64_t)b; poly128_t pr = vmull_p64(pa, pb);
+    // 64x64 -> 128 (GF(2))
+    uint64_t lo = vgetq_lane_u64(vreinterpretq_u64_p128(pr), 0); return (uint32_t)lo; // low 32 bits hold 16x16 product
 #else
-// On 32-bit targets, extract low 64 then cast.
-uint64_t low64; _mm_storel_epi64((__m128i *) &low64, prod);return (uint32_t)low64;
+    // Portable GF(2) 16x16 multiply (bitwise) if PMULL not available at build time.
+    uint32_t p = 0;
+    for(i = 0; i < 16; ++i) if(b & (1u << i)) p ^= (uint32_t)a << i;
+    return p;
 #endif
 }
 
@@ -49,15 +51,14 @@ uint64_t low64; _mm_storel_epi64((__m128i *) &low64, prod);return (uint32_t)low6
 static inline uint16_t gf2_reduce32_to16(uint32_t x)
 {
     int i;
-    // For each set bit at position i >= 16, xor poly shifted by (i-16).
-    for(i = 31; i >= 16; --i) { if(x & (1u << i)) x ^= (uint32_t)CRC16_CCITT_POLY << (i - 16); }
+    for(i = 31; i >= 16; --i) if(x & (1u << i)) x ^= (uint32_t)CRC16_CCITT_POLY << (i - 16);
     return (uint16_t)x;
 }
 
-// GF(2) multiply modulo 0x1021 for 16-bit operands, using PCLMUL for the product.
+// GF(2) multiply modulo 0x1021 for 16-bit operands, using PMULL for the product when available.
 static inline uint16_t gf2_mul16_mod(uint16_t a, uint16_t b)
 {
-    uint32_t prod = clmul16(a, b);  // 32-bit polynomial product
+    uint32_t prod = pmull16(a, b);  // 32-bit polynomial product
     return gf2_reduce32_to16(prod); // reduce to 16-bit remainder
 }
 
@@ -75,7 +76,7 @@ static inline uint16_t gf2_pow_x8(size_t len)
     return result;
 }
 
-// Compute CRC of a block starting from crc=0, using YOUR exact slice order (T[7] first).
+// Compute CRC of a block starting from crc=0, using your exact slice order (T[7] first).
 static inline uint16_t crc16_block_slice_by_8(const uint8_t *p, size_t n)
 {
     uint16_t c = 0;
@@ -96,30 +97,29 @@ static inline uint16_t crc16_block_slice_by_8(const uint8_t *p, size_t n)
     while(n--) c = (uint16_t)((c << 8) ^ crc16_ccitt_table[0][((c >> 8) ^ *p++) & 0xFF]);
 
     return c;
-}AARU_EXPORT TARGET_WITH_CLMUL int AARU_CALL crc16_ccitt_update_clmul(crc16_ccitt_ctx *ctx, const uint8_t *data,
+}
+
+AARU_EXPORT TARGET_WITH_CRYPTO int AARU_CALL crc16_ccitt_update_pmull(crc16_ccitt_ctx *ctx, const uint8_t *data,
                                                                       uint32_t         len)
 {
     if(!ctx || !data) return -1;
 
-#if defined(__x86_64__) || defined(__amd64) || defined(_M_AMD64) || defined(_M_X64) || defined(__I386__) || \
-defined(__i386__) || defined(__THW_INTEL) || defined(_M_IX86)
-if(have_clmul())return crc16_ccitt_update_clmul(ctx, data, len);
-#endif
+    uint16_t crc = ctx->crc;
 
-uint16_t crc = ctx->crc;
-
-// align to 4 bytes, byte-at-a-time.
-uintptr_t unaligned_length = (4 - (((uintptr_t)data) & 3)) & 3;while(len&& unaligned_length)
+    // Align to 4 bytes, byte-at-a-time.
+    uintptr_t unaligned_length = (4 - (((uintptr_t)data) & 3)) & 3;
+    while(len && unaligned_length)
     {
         crc = (uint16_t)((crc << 8) ^ crc16_ccitt_table[0][((crc >> 8) ^ *data++) & 0xFF]);
         len--;
         unaligned_length--;
     }
 
-// Process large blocks via: crc = mul(crc, x^(8*B)) ^ crc_block(0, block)
-// Choose a block size that balances pow() cost and locality.
-const size_t   BLOCK     = 64; // 64 bytes per block
-const uint16_t pow_block = gf2_pow_x8(BLOCK);while(len>= BLOCK)
+    // Process large blocks via: crc = mul(crc, x^(8*B)) ^ crc_block(0, block)
+    const size_t   BLOCK     = 64; // 64 bytes per block
+    const uint16_t pow_block = gf2_pow_x8(BLOCK);
+
+    while(len >= BLOCK)
     {
         uint16_t block_crc = crc16_block_slice_by_8(data, BLOCK);
         uint16_t folded    = gf2_mul16_mod(crc, pow_block);
@@ -129,10 +129,9 @@ const uint16_t pow_block = gf2_pow_x8(BLOCK);while(len>= BLOCK)
         len -= BLOCK;
     }
 
-// Handle the remainder: you can either combine once more, or fall back bytewise.
-// To stay faithful and still leverage PCLMUL combine, do one more combine for the tail.if(len>= 8)
+    // Handle remainder in 8-byte chunks using the same combine rule.
+    if(len >= 8)
     {
-        // Combine full 8-byte chunks with a single pow per chunk length (8).
         const uint16_t pow8 = gf2_pow_x8(8);
         while(len >= 8)
         {
@@ -145,7 +144,11 @@ const uint16_t pow_block = gf2_pow_x8(BLOCK);while(len>= BLOCK)
         }
     }
 
-// Final tiny tail (<=7 bytes)while(len--) crc                                  = (uint16_t)(
-    (crc << 8) ^ crc16_ccitt_table[0][((crc >> 8) ^ *data++) & 0xFF]); ctx->crc = crc;return 0;}
+    // Final tiny tail (<=7 bytes)
+    while(len--) crc = (uint16_t)((crc << 8) ^ crc16_ccitt_table[0][((crc >> 8) ^ *data++) & 0xFF]);
 
-#endif
+    ctx->crc = crc;
+    return 0;
+}
+
+#endif // ARM/NEON+PMULL

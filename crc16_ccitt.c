@@ -64,6 +64,16 @@ AARU_EXPORT int AARU_CALL crc16_ccitt_update(crc16_ccitt_ctx *ctx, const uint8_t
 
     if(!ctx || !data) return -1;
 
+#if defined(__x86_64__) || defined(__amd64) || defined(_M_AMD64) || defined(_M_X64) || defined(__I386__) || \
+defined(__i386__) || defined(__THW_INTEL) || defined(_M_IX86)
+    if(have_clmul()) return crc16_ccitt_update_clmul(ctx, data, len);
+#endif
+
+#if defined(__aarch64__) || defined(_M_ARM64) || defined(__arm__) || defined(_M_ARM)
+    if(have_arm_crypto()) return crc16_ccitt_update_pmull(ctx, data, len);
+    if(have_neon()) return crc16_ccitt_update_vmull(ctx, data, len);
+#endif
+
     uint16_t       crc;
     const uint8_t *current_char     = data;
     const size_t   unroll           = 4;
@@ -84,11 +94,10 @@ AARU_EXPORT int AARU_CALL crc16_ccitt_update(crc16_ccitt_ctx *ctx, const uint8_t
         size_t unrolling;
         for(unrolling = 0; unrolling < unroll; unrolling++)
         {
-            crc = crc16_ccitt_table[7][current_char[0] ^ (crc >> 8)] ^
-                  crc16_ccitt_table[6][current_char[1] ^ (crc & 0xFF)] ^ crc16_ccitt_table[5][current_char[2]] ^
-                  crc16_ccitt_table[4][current_char[3]] ^ crc16_ccitt_table[3][current_char[4]] ^
-                  crc16_ccitt_table[2][current_char[5]] ^ crc16_ccitt_table[1][current_char[6]] ^
-                  crc16_ccitt_table[0][current_char[7]];
+            crc = crc16_ccitt_table[7][current_char[0] ^ (crc >> 8)] ^ crc16_ccitt_table[6][
+                      current_char[1] ^ (crc & 0xFF)] ^ crc16_ccitt_table[5][current_char[2]] ^ crc16_ccitt_table[4][
+                      current_char[3]] ^ crc16_ccitt_table[3][current_char[4]] ^ crc16_ccitt_table[2][current_char[5]] ^
+                  crc16_ccitt_table[1][current_char[6]] ^ crc16_ccitt_table[0][current_char[7]];
 
             current_char += 8;
         }
@@ -130,7 +139,4 @@ AARU_EXPORT int AARU_CALL crc16_ccitt_final(crc16_ccitt_ctx *ctx, uint16_t *crc)
  *
  * @param ctx The CRC-16 checksum context structure, to be freed.
  */
-AARU_EXPORT void AARU_CALL crc16_ccitt_free(crc16_ccitt_ctx *ctx)
-{
-    if(ctx) free(ctx);
-}
+AARU_EXPORT void AARU_CALL crc16_ccitt_free(crc16_ccitt_ctx *ctx) { if(ctx) free(ctx); }

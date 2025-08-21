@@ -9,7 +9,6 @@
 #include "../library.h"
 #include "../crc16.h"
 #include "../simd.h"
-#include "/home/claunia/Development/Aaru/Aaru.Checksums.Native/simd.h"
 #include "gtest/gtest.h"
 
 #define EXPECTED_CRC16           0x2d6d
@@ -156,9 +155,7 @@ TEST_F(crc16Fixture, crc16_avx2)
     crc16_final(ctx, &crc);
 
     EXPECT_EQ(crc, EXPECTED_CRC16);
-}
-
-TEST_F(crc16Fixture, crc16_avx2_misaligned)
+}TEST_F(crc16Fixture, crc16_avx2_misaligned)
 {
     if(!have_avx2()) return;
 
@@ -171,9 +168,7 @@ TEST_F(crc16Fixture, crc16_avx2_misaligned)
     crc16_final(ctx, &crc);
 
     EXPECT_EQ(crc, EXPECTED_CRC16);
-}
-
-TEST_F(crc16Fixture, crc16_avx2_15bytes)
+}TEST_F(crc16Fixture, crc16_avx2_15bytes)
 {
     if(!have_avx2()) return;
 
@@ -186,9 +181,7 @@ TEST_F(crc16Fixture, crc16_avx2_15bytes)
     crc16_final(ctx, &crc);
 
     EXPECT_EQ(crc, EXPECTED_CRC16_15BYTES);
-}
-
-TEST_F(crc16Fixture, crc16_avx2_31bytes)
+}TEST_F(crc16Fixture, crc16_avx2_31bytes)
 {
     if(!have_avx2()) return;
 
@@ -201,9 +194,7 @@ TEST_F(crc16Fixture, crc16_avx2_31bytes)
     crc16_final(ctx, &crc);
 
     EXPECT_EQ(crc, EXPECTED_CRC16_31BYTES);
-}
-
-TEST_F(crc16Fixture, crc16_avx2_63bytes)
+}TEST_F(crc16Fixture, crc16_avx2_63bytes)
 {
     if(!have_avx2()) return;
 
@@ -216,9 +207,7 @@ TEST_F(crc16Fixture, crc16_avx2_63bytes)
     crc16_final(ctx, &crc);
 
     EXPECT_EQ(crc, EXPECTED_CRC16_63BYTES);
-}
-
-TEST_F(crc16Fixture, crc16_avx2_2352bytes)
+}TEST_F(crc16Fixture, crc16_avx2_2352bytes)
 {
     if(!have_avx2()) return;
 

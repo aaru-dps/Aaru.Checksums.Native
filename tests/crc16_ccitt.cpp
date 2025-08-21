@@ -154,9 +154,7 @@ TEST_F(crc16_ccittFixture, crc16_ccitt_clmul)
     crc16_ccitt_final(ctx, &crc);
 
     EXPECT_EQ(crc, EXPECTED_CRC16_CCITT);
-}
-
-TEST_F(crc16_ccittFixture, crc16_ccitt_clmul_misaligned)
+}TEST_F(crc16_ccittFixture, crc16_ccitt_clmul_misaligned)
 {
     if(!have_clmul()) return;
 
@@ -169,9 +167,7 @@ TEST_F(crc16_ccittFixture, crc16_ccitt_clmul_misaligned)
     crc16_ccitt_final(ctx, &crc);
 
     EXPECT_EQ(crc, EXPECTED_CRC16_CCITT);
-}
-
-TEST_F(crc16_ccittFixture, crc16_ccitt_clmul_15bytes)
+}TEST_F(crc16_ccittFixture, crc16_ccitt_clmul_15bytes)
 {
     if(!have_clmul()) return;
 
@@ -184,9 +180,7 @@ TEST_F(crc16_ccittFixture, crc16_ccitt_clmul_15bytes)
     crc16_ccitt_final(ctx, &crc);
 
     EXPECT_EQ(crc, EXPECTED_CRC16_CCITT_15BYTES);
-}
-
-TEST_F(crc16_ccittFixture, crc16_ccitt_clmul_31bytes)
+}TEST_F(crc16_ccittFixture, crc16_ccitt_clmul_31bytes)
 {
     if(!have_clmul()) return;
 
@@ -199,9 +193,7 @@ TEST_F(crc16_ccittFixture, crc16_ccitt_clmul_31bytes)
     crc16_ccitt_final(ctx, &crc);
 
     EXPECT_EQ(crc, EXPECTED_CRC16_CCITT_31BYTES);
-}
-
-TEST_F(crc16_ccittFixture, crc16_ccitt_clmul_63bytes)
+}TEST_F(crc16_ccittFixture, crc16_ccitt_clmul_63bytes)
 {
     if(!have_clmul()) return;
 
@@ -214,9 +206,7 @@ TEST_F(crc16_ccittFixture, crc16_ccitt_clmul_63bytes)
     crc16_ccitt_final(ctx, &crc);
 
     EXPECT_EQ(crc, EXPECTED_CRC16_CCITT_63BYTES);
-}
-
-TEST_F(crc16_ccittFixture, crc16_ccitt_clmul_2352bytes)
+}TEST_F(crc16_ccittFixture, crc16_ccitt_clmul_2352bytes)
 {
     if(!have_clmul()) return;
 
@@ -226,6 +216,189 @@ TEST_F(crc16_ccittFixture, crc16_ccitt_clmul_2352bytes)
     EXPECT_NE(ctx, nullptr);
 
     crc16_ccitt_update_clmul(ctx, buffer, 2352);
+    crc16_ccitt_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_CCITT_2352BYTES);
+}
+
+#endif
+
+#if defined(__aarch64__) || defined(_M_ARM64) || defined(__arm__) || defined(_M_ARM)
+TEST_F(crc16_ccittFixture, crc16_ccitt_pmull)
+{
+    if(!have_arm_crypto()) return;
+
+    crc16_ccitt_ctx *ctx = crc16_ccitt_init();
+    uint16_t         crc;
+
+    EXPECT_NE(ctx, nullptr);
+
+    crc16_ccitt_update_pmull(ctx, buffer, 1048576);
+    crc16_ccitt_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_CCITT);
+}
+
+TEST_F(crc16_ccittFixture, crc16_ccitt_pmull_misaligned)
+{
+    if(!have_arm_crypto()) return;
+
+    crc16_ccitt_ctx *ctx = crc16_ccitt_init();
+    uint16_t         crc;
+
+    EXPECT_NE(ctx, nullptr);
+
+    crc16_ccitt_update_pmull(ctx, buffer_misaligned + 1, 1048576);
+    crc16_ccitt_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_CCITT);
+}
+
+TEST_F(crc16_ccittFixture, crc16_ccitt_pmull_15bytes)
+{
+    if(!have_arm_crypto()) return;
+
+    crc16_ccitt_ctx *ctx = crc16_ccitt_init();
+    uint16_t         crc;
+
+    EXPECT_NE(ctx, nullptr);
+
+    crc16_ccitt_update_pmull(ctx, buffer, 15);
+    crc16_ccitt_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_CCITT_15BYTES);
+}
+
+TEST_F(crc16_ccittFixture, crc16_ccitt_pmull_31bytes)
+{
+    if(!have_arm_crypto()) return;
+
+    crc16_ccitt_ctx *ctx = crc16_ccitt_init();
+    uint16_t         crc;
+
+    EXPECT_NE(ctx, nullptr);
+
+    crc16_ccitt_update_pmull(ctx, buffer, 31);
+    crc16_ccitt_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_CCITT_31BYTES);
+}
+
+TEST_F(crc16_ccittFixture, crc16_ccitt_pmull_63bytes)
+{
+    if(!have_arm_crypto()) return;
+
+    crc16_ccitt_ctx *ctx = crc16_ccitt_init();
+    uint16_t         crc;
+
+    EXPECT_NE(ctx, nullptr);
+
+    crc16_ccitt_update_pmull(ctx, buffer, 63);
+    crc16_ccitt_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_CCITT_63BYTES);
+}
+
+TEST_F(crc16_ccittFixture, crc16_ccitt_pmull_2352bytes)
+{
+    if(!have_arm_crypto()) return;
+
+    crc16_ccitt_ctx *ctx = crc16_ccitt_init();
+    uint16_t         crc;
+
+    EXPECT_NE(ctx, nullptr);
+
+    crc16_ccitt_update_pmull(ctx, buffer, 2352);
+    crc16_ccitt_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_CCITT_2352BYTES);
+}
+
+TEST_F(crc16_ccittFixture, crc16_ccitt_vmull)
+{
+    if(!have_neon()) return;
+
+    crc16_ccitt_ctx *ctx = crc16_ccitt_init();
+    uint16_t         crc;
+
+    EXPECT_NE(ctx, nullptr);
+
+    crc16_ccitt_update_vmull(ctx, buffer, 1048576);
+    crc16_ccitt_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_CCITT);
+}
+
+TEST_F(crc16_ccittFixture, crc16_ccitt_vmull_misaligned)
+{
+    if(!have_neon()) return;
+
+    crc16_ccitt_ctx *ctx = crc16_ccitt_init();
+    uint16_t         crc;
+
+    EXPECT_NE(ctx, nullptr);
+
+    crc16_ccitt_update_vmull(ctx, buffer_misaligned + 1, 1048576);
+    crc16_ccitt_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_CCITT);
+}
+
+TEST_F(crc16_ccittFixture, crc16_ccitt_vmull_15bytes)
+{
+    if(!have_neon()) return;
+
+    crc16_ccitt_ctx *ctx = crc16_ccitt_init();
+    uint16_t         crc;
+
+    EXPECT_NE(ctx, nullptr);
+
+    crc16_ccitt_update_vmull(ctx, buffer, 15);
+    crc16_ccitt_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_CCITT_15BYTES);
+}
+
+TEST_F(crc16_ccittFixture, crc16_ccitt_vmull_31bytes)
+{
+    if(!have_neon()) return;
+
+    crc16_ccitt_ctx *ctx = crc16_ccitt_init();
+    uint16_t         crc;
+
+    EXPECT_NE(ctx, nullptr);
+
+    crc16_ccitt_update_vmull(ctx, buffer, 31);
+    crc16_ccitt_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_CCITT_31BYTES);
+}
+
+TEST_F(crc16_ccittFixture, crc16_ccitt_vmull_63bytes)
+{
+    if(!have_neon()) return;
+
+    crc16_ccitt_ctx *ctx = crc16_ccitt_init();
+    uint16_t         crc;
+
+    EXPECT_NE(ctx, nullptr);
+
+    crc16_ccitt_update_vmull(ctx, buffer, 63);
+    crc16_ccitt_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_CCITT_63BYTES);
+}
+
+TEST_F(crc16_ccittFixture, crc16_ccitt_vmull_2352bytes)
+{
+    if(!have_neon()) return;
+
+    crc16_ccitt_ctx *ctx = crc16_ccitt_init();
+    uint16_t         crc;
+
+    EXPECT_NE(ctx, nullptr);
+
+    crc16_ccitt_update_vmull(ctx, buffer, 2352);
     crc16_ccitt_final(ctx, &crc);
 
     EXPECT_EQ(crc, EXPECTED_CRC16_CCITT_2352BYTES);
