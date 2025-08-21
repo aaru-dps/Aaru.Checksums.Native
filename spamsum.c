@@ -389,8 +389,6 @@ AARU_EXPORT int AARU_CALL spamsum_final(spamsum_ctx *ctx, uint8_t *result)
         ++bi;
         i = (int)ctx->bh[bi].d_len;
 
-        if(i <= remain);
-
         memcpy(result, ctx->bh[bi].digest, (size_t)i);
         result += i;
         remain -= i;
