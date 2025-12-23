@@ -1,6 +1,6 @@
 /*
  * This file is part of the Aaru Data Preservation Suite.
- * Copyright (c) 2019-2025 Natalia Portillo.
+ * Copyright (c) 2019-2026 Natalia Portillo.
  * Copyright 2017 The Chromium Authors. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

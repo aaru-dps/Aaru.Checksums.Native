@@ -1,6 +1,6 @@
 /*
  * This file is part of the Aaru Data Preservation Suite.
- * Copyright © 2011-2025 Natalia Portillo
+ * Copyright © 2011-2026 Natalia Portillo
  * Copyright (c) 2016 Marian Beermann (add support for initial value, restructuring)
  * Copyright (C) 2013 Intel Corporation. All rights reserved.
  *
