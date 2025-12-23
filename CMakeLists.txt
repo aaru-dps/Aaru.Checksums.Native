@@ -120,3 +120,4 @@ add_library("Aaru.Checksums.Native" SHARED adler32.h adler32.c crc16.h crc16.c c
         crc16_neon.c)
 
 add_subdirectory(tests)
+add_subdirectory(benchmarks)
