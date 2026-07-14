@@ -606,3 +606,5 @@ pkg/**/aaru
 .sonarqube
 
 build/*
+.cmake
+_deps
