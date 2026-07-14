@@ -119,5 +119,7 @@ add_library("Aaru.Checksums.Native" SHARED adler32.h adler32.c crc16.h crc16.c c
         crc16_ccitt_vmull.c
         crc16_neon.c)
 
-add_subdirectory(tests)
-add_subdirectory(benchmarks)
+if (NOT AARU_BUILD_PACKAGE)
+    add_subdirectory(tests)
+    add_subdirectory(benchmarks)
+endif ()
