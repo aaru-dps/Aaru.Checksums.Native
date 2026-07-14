@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
     <metadata>
         <id>Aaru.Checksums.Native</id>
-        <version>6.0.0-alpha.10</version>
+        <version>6.0.0-beta.1</version>
         <description>C implementation of CRC16, CRC32, CRC64, Fletcher, Adler and SpamSum.</description>
         <authors>claunia</authors>
         <projectUrl>https://github.com/aaru-dps/Aaru.Checksums.Native</projectUrl>
