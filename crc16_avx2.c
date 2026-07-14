@@ -67,56 +67,35 @@ AARU_EXPORT TARGET_WITH_AVX2 int AARU_CALL crc16_update_avx2(crc16_ctx *ctx, con
         __m256i v2 = _mm256_loadu_si256((const __m256i *)(p + 64));
         __m256i v3 = _mm256_loadu_si256((const __m256i *)(p + 96));
 
-        // Extract 64-bit lanes (8 lanes total per 64B, 16 lanes per 128B)
-        __m128i v0_lo = _mm256_extracti128_si256(v0, 0);
-        __m128i v0_hi = _mm256_extracti128_si256(v0, 1);
-        __m128i v1_lo = _mm256_extracti128_si256(v1, 0);
-        __m128i v1_hi = _mm256_extracti128_si256(v1, 1);
-        __m128i v2_lo = _mm256_extracti128_si256(v2, 0);
-        __m128i v2_hi = _mm256_extracti128_si256(v2, 1);
-        __m128i v3_lo = _mm256_extracti128_si256(v3, 0);
-        __m128i v3_hi = _mm256_extracti128_si256(v3, 1);
-
-        uint64_t l00 = (uint64_t)_mm_cvtsi128_si64(v0_lo);
-        uint64_t l01 = (uint64_t)_mm_extract_epi64(v0_lo, 1);
-        uint64_t l02 = (uint64_t)_mm_cvtsi128_si64(v0_hi);
-        uint64_t l03 = (uint64_t)_mm_extract_epi64(v0_hi, 1);
-
-        uint64_t l10 = (uint64_t)_mm_cvtsi128_si64(v1_lo);
-        uint64_t l11 = (uint64_t)_mm_extract_epi64(v1_lo, 1);
-        uint64_t l12 = (uint64_t)_mm_cvtsi128_si64(v1_hi);
-        uint64_t l13 = (uint64_t)_mm_extract_epi64(v1_hi, 1);
-
-        uint64_t l20 = (uint64_t)_mm_cvtsi128_si64(v2_lo);
-        uint64_t l21 = (uint64_t)_mm_extract_epi64(v2_lo, 1);
-        uint64_t l22 = (uint64_t)_mm_cvtsi128_si64(v2_hi);
-        uint64_t l23 = (uint64_t)_mm_extract_epi64(v2_hi, 1);
-
-        uint64_t l30 = (uint64_t)_mm_cvtsi128_si64(v3_lo);
-        uint64_t l31 = (uint64_t)_mm_extract_epi64(v3_lo, 1);
-        uint64_t l32 = (uint64_t)_mm_cvtsi128_si64(v3_hi);
-        uint64_t l33 = (uint64_t)_mm_extract_epi64(v3_hi, 1);
+        // Spill the 16x 64-bit lanes to memory. Storing (rather than _mm_cvtsi128_si64 /
+        // _mm_extract_epi64) keeps this portable to 32-bit x86, where those 64-bit GPR
+        // intrinsics do not exist; the lanes are consumed scalarly anyway.
+        uint64_t lanes[16];
+        _mm256_storeu_si256((__m256i *)(lanes + 0), v0);
+        _mm256_storeu_si256((__m256i *)(lanes + 4), v1);
+        _mm256_storeu_si256((__m256i *)(lanes + 8), v2);
+        _mm256_storeu_si256((__m256i *)(lanes + 12), v3);
 
         // Process in strict stream order (slicing-by-8 semantics)
-        CRC8_chunk(&crc, l00);
-        CRC8_chunk(&crc, l01);
-        CRC8_chunk(&crc, l02);
-        CRC8_chunk(&crc, l03);
+        CRC8_chunk(&crc, lanes[0]);
+        CRC8_chunk(&crc, lanes[1]);
+        CRC8_chunk(&crc, lanes[2]);
+        CRC8_chunk(&crc, lanes[3]);
 
-        CRC8_chunk(&crc, l10);
-        CRC8_chunk(&crc, l11);
-        CRC8_chunk(&crc, l12);
-        CRC8_chunk(&crc, l13);
+        CRC8_chunk(&crc, lanes[4]);
+        CRC8_chunk(&crc, lanes[5]);
+        CRC8_chunk(&crc, lanes[6]);
+        CRC8_chunk(&crc, lanes[7]);
 
-        CRC8_chunk(&crc, l20);
-        CRC8_chunk(&crc, l21);
-        CRC8_chunk(&crc, l22);
-        CRC8_chunk(&crc, l23);
+        CRC8_chunk(&crc, lanes[8]);
+        CRC8_chunk(&crc, lanes[9]);
+        CRC8_chunk(&crc, lanes[10]);
+        CRC8_chunk(&crc, lanes[11]);
 
-        CRC8_chunk(&crc, l30);
-        CRC8_chunk(&crc, l31);
-        CRC8_chunk(&crc, l32);
-        CRC8_chunk(&crc, l33);
+        CRC8_chunk(&crc, lanes[12]);
+        CRC8_chunk(&crc, lanes[13]);
+        CRC8_chunk(&crc, lanes[14]);
+        CRC8_chunk(&crc, lanes[15]);
 
         p += 128;
         len -= 128;
@@ -127,19 +106,15 @@ AARU_EXPORT TARGET_WITH_AVX2 int AARU_CALL crc16_update_avx2(crc16_ctx *ctx, con
     {
         _mm_prefetch((const char*)(p + 128), _MM_HINT_T0);
 
-        __m256i v  = _mm256_loadu_si256((const __m256i *)p);
-        __m128i lo = _mm256_extracti128_si256(v, 0);
-        __m128i hi = _mm256_extracti128_si256(v, 1);
+        __m256i v = _mm256_loadu_si256((const __m256i *)p);
 
-        uint64_t l0 = (uint64_t)_mm_cvtsi128_si64(lo);
-        uint64_t l1 = (uint64_t)_mm_extract_epi64(lo, 1);
-        uint64_t l2 = (uint64_t)_mm_cvtsi128_si64(hi);
-        uint64_t l3 = (uint64_t)_mm_extract_epi64(hi, 1);
+        uint64_t lanes[4];
+        _mm256_storeu_si256((__m256i *)lanes, v);
 
-        CRC8_chunk(&crc, l0);
-        CRC8_chunk(&crc, l1);
-        CRC8_chunk(&crc, l2);
-        CRC8_chunk(&crc, l3);
+        CRC8_chunk(&crc, lanes[0]);
+        CRC8_chunk(&crc, lanes[1]);
+        CRC8_chunk(&crc, lanes[2]);
+        CRC8_chunk(&crc, lanes[3]);
 
         p += 32;
         len -= 32;
