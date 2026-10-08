@@ -207,13 +207,15 @@ mv libAaru.Checksums.Native.dll runtimes/win-x86/native/
 ## Mac OS X (arm64 and x64)
 if [[ ${OS_NAME} == Darwin ]]; then
     rm -f CMakeCache.txt
-    cmake -DCMAKE_BUILD_TYPE=Release -DAARU_BUILD_PACKAGE=1 -DAARU_MACOS_TARGET_ARCH=x86_64 .
+    cmake -DCMAKE_BUILD_TYPE=Release -DAARU_BUILD_PACKAGE=1 -DAARU_MACOS_TARGET_ARCH=x86_64 \
+          -DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_SYSTEM_PROCESSOR=x86_64 .
     make
     mkdir -p runtimes/osx-x64/native
     mv libAaru.Checksums.Native.dylib runtimes/osx-x64/native
 
     rm -f CMakeCache.txt
-    cmake -DCMAKE_BUILD_TYPE=Release -DAARU_BUILD_PACKAGE=1 -DAARU_MACOS_TARGET_ARCH=arm64 .
+    cmake -DCMAKE_BUILD_TYPE=Release -DAARU_BUILD_PACKAGE=1 -DAARU_MACOS_TARGET_ARCH=arm64 \
+          -DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_SYSTEM_PROCESSOR=arm64 .
     make
     mkdir -p runtimes/osx-arm64/native
     mv libAaru.Checksums.Native.dylib runtimes/osx-arm64/native
