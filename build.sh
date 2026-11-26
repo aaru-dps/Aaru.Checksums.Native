@@ -101,15 +101,15 @@ docker/dockcross-linux-arm64 cmake -DCMAKE_BUILD_TYPE=Release -DAARU_BUILD_PACKA
 docker/dockcross-linux-arm64 make
 mv libAaru.Checksums.Native.so runtimes/linux-arm64/native/
 
-## Linux (MIPS64)
+## Linux (MIPS64) -- disabled: CRC-16/32/64 fail tests on big-endian
 # Detected system processor: mips
-rm -f CMakeCache.txt
-mkdir -p runtimes/linux-mips64/native
-docker run --rm dockcross/linux-mips >docker/dockcross-linux-mips64
-chmod +x docker/dockcross-linux-mips64
-docker/dockcross-linux-mips64 cmake -DCMAKE_BUILD_TYPE=Release -DAARU_BUILD_PACKAGE=1 .
-docker/dockcross-linux-mips64 make
-mv libAaru.Checksums.Native.so runtimes/linux-mips64/native/
+#rm -f CMakeCache.txt
+#mkdir -p runtimes/linux-mips64/native
+#docker run --rm dockcross/linux-mips >docker/dockcross-linux-mips64
+#chmod +x docker/dockcross-linux-mips64
+#docker/dockcross-linux-mips64 cmake -DCMAKE_BUILD_TYPE=Release -DAARU_BUILD_PACKAGE=1 .
+#docker/dockcross-linux-mips64 make
+#mv libAaru.Checksums.Native.so runtimes/linux-mips64/native/
 
 ## Linux (ARM), musl
 # Detected system processor: arm
@@ -131,15 +131,15 @@ docker/dockcross-linux-musl-arm64 cmake -DCMAKE_BUILD_TYPE=Release -DAARU_BUILD_
 docker/dockcross-linux-musl-arm64 make
 mv libAaru.Checksums.Native.so runtimes/linux-musl-arm64/native/
 
-## Linux (s390x)
+## Linux (s390x) -- disabled: CRC-16/32/64 fail tests on big-endian
 # Detected system processor: s390x
-rm -f CMakeCache.txt
-mkdir -p runtimes/linux-s390x/native
-docker run --rm dockcross/linux-s390x >docker/dockcross-linux-s390x
-chmod +x docker/dockcross-linux-s390x
-docker/dockcross-linux-s390x cmake -DCMAKE_BUILD_TYPE=Release -DAARU_BUILD_PACKAGE=1 .
-docker/dockcross-linux-s390x make
-mv libAaru.Checksums.Native.so runtimes/linux-s390x/native/
+#rm -f CMakeCache.txt
+#mkdir -p runtimes/linux-s390x/native
+#docker run --rm dockcross/linux-s390x >docker/dockcross-linux-s390x
+#chmod +x docker/dockcross-linux-s390x
+#docker/dockcross-linux-s390x cmake -DCMAKE_BUILD_TYPE=Release -DAARU_BUILD_PACKAGE=1 .
+#docker/dockcross-linux-s390x make
+#mv libAaru.Checksums.Native.so runtimes/linux-s390x/native/
 
 ## Linux (amd64)
 # Detected system processor: x86_64
@@ -246,6 +246,9 @@ fi
 # TODO: "linux-musl-x64"
 # TODO: "linux-musl-x86"
 # TODO: "linux-musl-arm"
+
+# Big-endian targets are disabled, do not package stale binaries from older builds
+rm -rf runtimes/linux-mips64 runtimes/linux-s390x
 
 nuget pack
 

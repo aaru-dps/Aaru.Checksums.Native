@@ -1,0 +1,170 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  CMAKE_FLAGS: -DCMAKE_BUILD_TYPE=Release -DAARU_BUILD_BENCHMARKS=OFF
+
+jobs:
+  # Linux targets built with the same dockcross images as build.sh.
+  # Tests run natively on x86/x64 and under the qemu-user shipped in each image otherwise.
+  linux-dockcross:
+    name: ${{ matrix.target }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: linux-x64,     image: linux-x64,        emu: "" }
+          - { target: linux-x86,     image: linux-x86,        emu: "" }
+          - { target: linux-arm,     image: linux-armv7a-lts, emu: qemu-arm }
+          # Big-endian targets are disabled in build.sh: CRC-16/32/64 fail tests on big-endian.
+          # - { target: linux-mips64,  image: linux-mips,       emu: qemu-mips }
+          # - { target: linux-s390x,   image: linux-s390x,      emu: qemu-s390x }
+          - { target: linux-ppc64le, image: linux-ppc64le,    emu: qemu-ppc64le }
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Build and test
+        run: |
+          docker run --rm -v "$PWD:/work" -w /work -e CMAKE_FLAGS -e EMU="${{ matrix.emu }}" \
+            dockcross/${{ matrix.image }} bash -ec '
+              cmake -B build $CMAKE_FLAGS
+              cmake --build build -j"$(nproc)"
+              cd build/tests
+              $EMU ./tests_run
+            '
+
+  # ARM64 Linux targets run natively on GitHub's ARM64 runners.
+  linux-arm64:
+    name: linux-arm64
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake build-essential
+      - name: Build
+        run: |
+          cmake -B build $CMAKE_FLAGS
+          cmake --build build -j"$(nproc)"
+      - name: Test
+        working-directory: build/tests
+        run: ./tests_run
+
+  linux-musl-arm64:
+    name: linux-musl-arm64
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      # JavaScript actions cannot run inside Alpine containers on arm64, so run the container manually.
+      - name: Build and test
+        run: |
+          docker run --rm -v "$PWD:/work" -w /work -e CMAKE_FLAGS alpine:latest sh -ec '
+            apk add --no-cache build-base cmake linux-headers
+            cmake -B build $CMAKE_FLAGS
+            cmake --build build -j"$(nproc)"
+            cd build/tests
+            ./tests_run
+          '
+
+  # Android targets are build-only: there is no bionic loader on the runners.
+  android:
+    name: ${{ matrix.target }} (build only)
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: android-arm,   image: android-arm }
+          - { target: android-arm64, image: android-arm64 }
+          - { target: android-x64,   image: android-x86_64 }
+          - { target: android-x86,   image: android-x86 }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: |
+          docker run --rm -v "$PWD:/work" -w /work dockcross/${{ matrix.image }} bash -ec '
+            cmake -B build -DCMAKE_BUILD_TYPE=Release -DAARU_BUILD_PACKAGE=1
+            cmake --build build -j"$(nproc)"
+            ls -l build/libAaru.Checksums.Native.so
+          '
+
+  # Windows targets built and tested natively with MSYS2's MinGW toolchains.
+  windows:
+    name: win-${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: x64,   runner: windows-latest, msystem: MINGW64 }
+          - { arch: x86,   runner: windows-latest, msystem: MINGW32 }
+          - { arch: arm64, runner: windows-11-arm, msystem: CLANGARM64 }
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.msystem }}
+          update: true
+          pacboy: >-
+            toolchain:p
+            cmake:p
+            ninja:p
+      - name: Build
+        run: |
+          cmake -G Ninja -B build $CMAKE_FLAGS
+          cmake --build build
+      - name: Test
+        working-directory: build/tests
+        run: ./tests_run.exe
+
+  # Windows ARMv7 has no runner nor user-mode emulator: build only, exactly as build.sh does.
+  win-arm:
+    name: win-arm (build only)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: |
+          docker run --rm -v "$PWD:/work" -w /work dockcross/windows-armv7 bash -ec '
+            cmake -DCMAKE_BUILD_TYPE=Release -DAARU_BUILD_PACKAGE=1 .
+            sed -i -e "s/\-fPIC\s//g" -e "s/\-soname,libAaru\.Checksums\.Native\.so//g" ./CMakeFiles/Aaru.Checksums.Native.dir/link.txt
+            sed -i -e "s/\-fPIC\s//g" ./CMakeFiles/Aaru.Checksums.Native.dir/flags.make
+            make -j"$(nproc)"
+            ls -l libAaru.Checksums.Native.dll
+          '
+
+  macos:
+    name: osx-${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: x64,   runner: macos-15-intel, processor: x86_64 }
+          - { arch: arm64, runner: macos-latest,   processor: arm64 }
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Build
+        run: |
+          cmake -B build $CMAKE_FLAGS -DAARU_MACOS_TARGET_ARCH=${{ matrix.processor }} \
+                -DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_SYSTEM_PROCESSOR=${{ matrix.processor }}
+          cmake --build build -j"$(sysctl -n hw.ncpu)"
+      - name: Test
+        working-directory: build/tests
+        run: ./tests_run
