@@ -26,7 +26,7 @@ jobs:
           # - { target: linux-s390x,   image: linux-s390x,      emu: qemu-s390x }
           - { target: linux-ppc64le, image: linux-ppc64le,    emu: qemu-ppc64le }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
       - name: Build and test
@@ -44,7 +44,7 @@ jobs:
     name: linux-arm64
     runs-on: ubuntu-24.04-arm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
       - name: Install dependencies
@@ -61,7 +61,7 @@ jobs:
     name: linux-musl-arm64
     runs-on: ubuntu-24.04-arm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
       # JavaScript actions cannot run inside Alpine containers on arm64, so run the container manually.
@@ -88,7 +88,7 @@ jobs:
           - { target: android-x64,   image: android-x86_64 }
           - { target: android-x86,   image: android-x86 }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build
         run: |
           docker run --rm -v "$PWD:/work" -w /work dockcross/${{ matrix.image }} bash -ec '
@@ -112,7 +112,7 @@ jobs:
       run:
         shell: msys2 {0}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
       - uses: msys2/setup-msys2@v2
@@ -136,7 +136,7 @@ jobs:
     name: win-arm (build only)
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build
         run: |
           docker run --rm -v "$PWD:/work" -w /work dockcross/windows-armv7 bash -ec '
@@ -157,7 +157,7 @@ jobs:
           - { arch: x64,   runner: macos-15-intel, processor: x86_64 }
           - { arch: arm64, runner: macos-latest,   processor: arm64 }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
       - name: Build
