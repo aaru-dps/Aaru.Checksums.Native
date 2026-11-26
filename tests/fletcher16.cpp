@@ -76,6 +76,19 @@ TEST_F(fletcher16Fixture, fletcher16_auto)
     EXPECT_EQ(fletcher, EXPECTED_FLETCHER16);
 }
 
+TEST_F(fletcher16Fixture, fletcher16_slicing)
+{
+    uint8_t sum1 = 0xFF;
+    uint8_t sum2 = 0xFF;
+    uint16_t fletcher;
+
+    fletcher16_slicing(&sum1, &sum2, buffer, 1048576);
+
+    fletcher = (uint16_t)((sum2 << 8) | sum1);
+
+    EXPECT_EQ(fletcher, EXPECTED_FLETCHER16);
+}
+
 TEST_F(fletcher16Fixture, fletcher16_auto_misaligned)
 {
     fletcher16_ctx *ctx = fletcher16_init();
@@ -85,6 +98,19 @@ TEST_F(fletcher16Fixture, fletcher16_auto_misaligned)
 
     fletcher16_update(ctx, buffer_misaligned + 1, 1048576);
     fletcher16_final(ctx, &fletcher);
+
+    EXPECT_EQ(fletcher, EXPECTED_FLETCHER16);
+}
+
+TEST_F(fletcher16Fixture, fletcher16_slicing_misaligned)
+{
+    uint8_t sum1 = 0xFF;
+    uint8_t sum2 = 0xFF;
+    uint16_t fletcher;
+
+    fletcher16_slicing(&sum1, &sum2, buffer_misaligned + 1, 1048576);
+
+    fletcher = (uint16_t)((sum2 << 8) | sum1);
 
     EXPECT_EQ(fletcher, EXPECTED_FLETCHER16);
 }
@@ -102,6 +128,19 @@ TEST_F(fletcher16Fixture, fletcher16_auto_1byte)
     EXPECT_EQ(fletcher, EXPECTED_FLETCHER16_1BYTE);
 }
 
+TEST_F(fletcher16Fixture, fletcher16_slicing_1byte)
+{
+    uint8_t sum1 = 0xFF;
+    uint8_t sum2 = 0xFF;
+    uint16_t fletcher;
+
+    fletcher16_slicing(&sum1, &sum2, buffer, 1);
+
+    fletcher = (uint16_t)((sum2 << 8) | sum1);
+
+    EXPECT_EQ(fletcher, EXPECTED_FLETCHER16_1BYTE);
+}
+
 TEST_F(fletcher16Fixture, fletcher16_auto_5bytes)
 {
     fletcher16_ctx *ctx = fletcher16_init();
@@ -111,6 +150,19 @@ TEST_F(fletcher16Fixture, fletcher16_auto_5bytes)
 
     fletcher16_update(ctx, buffer, 5);
     fletcher16_final(ctx, &fletcher);
+
+    EXPECT_EQ(fletcher, EXPECTED_FLETCHER16_5BYTES);
+}
+
+TEST_F(fletcher16Fixture, fletcher16_slicing_5bytes)
+{
+    uint8_t sum1 = 0xFF;
+    uint8_t sum2 = 0xFF;
+    uint16_t fletcher;
+
+    fletcher16_slicing(&sum1, &sum2, buffer, 5);
+
+    fletcher = (uint16_t)((sum2 << 8) | sum1);
 
     EXPECT_EQ(fletcher, EXPECTED_FLETCHER16_5BYTES);
 }
@@ -128,6 +180,19 @@ TEST_F(fletcher16Fixture, fletcher16_auto_7bytes)
     EXPECT_EQ(fletcher, EXPECTED_FLETCHER16_7BYTES);
 }
 
+TEST_F(fletcher16Fixture, fletcher16_slicing_7bytes)
+{
+    uint8_t sum1 = 0xFF;
+    uint8_t sum2 = 0xFF;
+    uint16_t fletcher;
+
+    fletcher16_slicing(&sum1, &sum2, buffer, 7);
+
+    fletcher = (uint16_t)((sum2 << 8) | sum1);
+
+    EXPECT_EQ(fletcher, EXPECTED_FLETCHER16_7BYTES);
+}
+
 TEST_F(fletcher16Fixture, fletcher16_auto_15bytes)
 {
     fletcher16_ctx *ctx = fletcher16_init();
@@ -137,6 +202,19 @@ TEST_F(fletcher16Fixture, fletcher16_auto_15bytes)
 
     fletcher16_update(ctx, buffer, 15);
     fletcher16_final(ctx, &fletcher);
+
+    EXPECT_EQ(fletcher, EXPECTED_FLETCHER16_15BYTES);
+}
+
+TEST_F(fletcher16Fixture, fletcher16_slicing_15bytes)
+{
+    uint8_t sum1 = 0xFF;
+    uint8_t sum2 = 0xFF;
+    uint16_t fletcher;
+
+    fletcher16_slicing(&sum1, &sum2, buffer, 15);
+
+    fletcher = (uint16_t)((sum2 << 8) | sum1);
 
     EXPECT_EQ(fletcher, EXPECTED_FLETCHER16_15BYTES);
 }
@@ -154,6 +232,19 @@ TEST_F(fletcher16Fixture, fletcher16_auto_31bytes)
     EXPECT_EQ(fletcher, EXPECTED_FLETCHER16_31BYTES);
 }
 
+TEST_F(fletcher16Fixture, fletcher16_slicing_31bytes)
+{
+    uint8_t sum1 = 0xFF;
+    uint8_t sum2 = 0xFF;
+    uint16_t fletcher;
+
+    fletcher16_slicing(&sum1, &sum2, buffer, 31);
+
+    fletcher = (uint16_t)((sum2 << 8) | sum1);
+
+    EXPECT_EQ(fletcher, EXPECTED_FLETCHER16_31BYTES);
+}
+
 TEST_F(fletcher16Fixture, fletcher16_auto_63bytes)
 {
     fletcher16_ctx *ctx = fletcher16_init();
@@ -167,6 +258,19 @@ TEST_F(fletcher16Fixture, fletcher16_auto_63bytes)
     EXPECT_EQ(fletcher, EXPECTED_FLETCHER16_63BYTES);
 }
 
+TEST_F(fletcher16Fixture, fletcher16_slicing_63bytes)
+{
+    uint8_t sum1 = 0xFF;
+    uint8_t sum2 = 0xFF;
+    uint16_t fletcher;
+
+    fletcher16_slicing(&sum1, &sum2, buffer, 63);
+
+    fletcher = (uint16_t)((sum2 << 8) | sum1);
+
+    EXPECT_EQ(fletcher, EXPECTED_FLETCHER16_63BYTES);
+}
+
 TEST_F(fletcher16Fixture, fletcher16_auto_2352bytes)
 {
     fletcher16_ctx *ctx = fletcher16_init();
@@ -176,6 +280,19 @@ TEST_F(fletcher16Fixture, fletcher16_auto_2352bytes)
 
     fletcher16_update(ctx, buffer, 2352);
     fletcher16_final(ctx, &fletcher);
+
+    EXPECT_EQ(fletcher, EXPECTED_FLETCHER16_2352BYTES);
+}
+
+TEST_F(fletcher16Fixture, fletcher16_slicing_2352bytes)
+{
+    uint8_t sum1 = 0xFF;
+    uint8_t sum2 = 0xFF;
+    uint16_t fletcher;
+
+    fletcher16_slicing(&sum1, &sum2, buffer, 2352);
+
+    fletcher = (uint16_t)((sum2 << 8) | sum1);
 
     EXPECT_EQ(fletcher, EXPECTED_FLETCHER16_2352BYTES);
 }

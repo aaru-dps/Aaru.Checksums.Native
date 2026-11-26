@@ -33,6 +33,7 @@ AARU_EXPORT fletcher16_ctx *AARU_CALL fletcher16_init();
 AARU_EXPORT int AARU_CALL             fletcher16_update(fletcher16_ctx *ctx, const uint8_t *data, uint32_t len);
 AARU_EXPORT int AARU_CALL             fletcher16_final(fletcher16_ctx *ctx, uint16_t *checksum);
 AARU_EXPORT void AARU_CALL            fletcher16_free(fletcher16_ctx *ctx);
+AARU_EXPORT void AARU_CALL            fletcher16_slicing(uint8_t *sum1, uint8_t *sum2, const uint8_t *data, uint32_t len);
 
 #if defined(__x86_64__) || defined(__amd64) || defined(_M_AMD64) || defined(_M_X64) || defined(__I386__) || \
     defined(__i386__) || defined(__THW_INTEL) || defined(_M_IX86)

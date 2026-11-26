@@ -73,6 +73,17 @@ TEST_F(crc16_ccittFixture, crc16_ccitt_auto)
     EXPECT_EQ(crc, EXPECTED_CRC16_CCITT);
 }
 
+TEST_F(crc16_ccittFixture, crc16_ccitt_slicing)
+{
+    uint16_t crc = 0;
+
+    crc16_ccitt_slicing(&crc, buffer, 1048576);
+
+    crc = (uint16_t)~crc;
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_CCITT);
+}
+
 TEST_F(crc16_ccittFixture, crc16_ccitt_auto_misaligned)
 {
     crc16_ccitt_ctx *ctx = crc16_ccitt_init();
@@ -82,6 +93,17 @@ TEST_F(crc16_ccittFixture, crc16_ccitt_auto_misaligned)
 
     crc16_ccitt_update(ctx, buffer_misaligned + 1, 1048576);
     crc16_ccitt_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_CCITT);
+}
+
+TEST_F(crc16_ccittFixture, crc16_ccitt_slicing_misaligned)
+{
+    uint16_t crc = 0;
+
+    crc16_ccitt_slicing(&crc, buffer_misaligned + 1, 1048576);
+
+    crc = (uint16_t)~crc;
 
     EXPECT_EQ(crc, EXPECTED_CRC16_CCITT);
 }
@@ -99,6 +121,17 @@ TEST_F(crc16_ccittFixture, crc16_ccitt_auto_15bytes)
     EXPECT_EQ(crc, EXPECTED_CRC16_CCITT_15BYTES);
 }
 
+TEST_F(crc16_ccittFixture, crc16_ccitt_slicing_15bytes)
+{
+    uint16_t crc = 0;
+
+    crc16_ccitt_slicing(&crc, buffer, 15);
+
+    crc = (uint16_t)~crc;
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_CCITT_15BYTES);
+}
+
 TEST_F(crc16_ccittFixture, crc16_ccitt_auto_31bytes)
 {
     crc16_ccitt_ctx *ctx = crc16_ccitt_init();
@@ -108,6 +141,17 @@ TEST_F(crc16_ccittFixture, crc16_ccitt_auto_31bytes)
 
     crc16_ccitt_update(ctx, buffer, 31);
     crc16_ccitt_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_CCITT_31BYTES);
+}
+
+TEST_F(crc16_ccittFixture, crc16_ccitt_slicing_31bytes)
+{
+    uint16_t crc = 0;
+
+    crc16_ccitt_slicing(&crc, buffer, 31);
+
+    crc = (uint16_t)~crc;
 
     EXPECT_EQ(crc, EXPECTED_CRC16_CCITT_31BYTES);
 }
@@ -125,6 +169,17 @@ TEST_F(crc16_ccittFixture, crc16_ccitt_auto_63bytes)
     EXPECT_EQ(crc, EXPECTED_CRC16_CCITT_63BYTES);
 }
 
+TEST_F(crc16_ccittFixture, crc16_ccitt_slicing_63bytes)
+{
+    uint16_t crc = 0;
+
+    crc16_ccitt_slicing(&crc, buffer, 63);
+
+    crc = (uint16_t)~crc;
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_CCITT_63BYTES);
+}
+
 TEST_F(crc16_ccittFixture, crc16_ccitt_auto_2352bytes)
 {
     crc16_ccitt_ctx *ctx = crc16_ccitt_init();
@@ -134,6 +189,17 @@ TEST_F(crc16_ccittFixture, crc16_ccitt_auto_2352bytes)
 
     crc16_ccitt_update(ctx, buffer, 2352);
     crc16_ccitt_final(ctx, &crc);
+
+    EXPECT_EQ(crc, EXPECTED_CRC16_CCITT_2352BYTES);
+}
+
+TEST_F(crc16_ccittFixture, crc16_ccitt_slicing_2352bytes)
+{
+    uint16_t crc = 0;
+
+    crc16_ccitt_slicing(&crc, buffer, 2352);
+
+    crc = (uint16_t)~crc;
 
     EXPECT_EQ(crc, EXPECTED_CRC16_CCITT_2352BYTES);
 }

@@ -92,21 +92,36 @@ AARU_EXPORT int AARU_CALL fletcher32_update(fletcher32_ctx *ctx, const uint8_t *
     }
 #endif
 
-    uint32_t sum1 = ctx->sum1;
-    uint32_t sum2 = ctx->sum2;
+    fletcher32_slicing(&ctx->sum1, &ctx->sum2, data, len);
+
+    return 0;
+}
+
+/**
+ * @brief Calculates the Fletcher-32 checksum using the portable (non-SIMD) algorithm.
+ *
+ * @param sum1 Pointer to the first sum value, updated in place.
+ * @param sum2 Pointer to the second sum value, updated in place.
+ * @param data Pointer to the data for which the checksum is to be calculated.
+ * @param len The length of the data in bytes.
+ */
+AARU_EXPORT void AARU_CALL fletcher32_slicing(uint16_t *sum1, uint16_t *sum2, const uint8_t *data, uint32_t len)
+{
+    uint32_t s1 = *sum1;
+    uint32_t s2 = *sum2;
     unsigned n;
 
     /* in case user likes doing a byte at a time, keep it fast */
     if(len == 1)
     {
-        sum1 += data[0];
-        if(sum1 >= FLETCHER32_MODULE) sum1 -= FLETCHER32_MODULE;
-        sum2 += sum1;
-        if(sum2 >= FLETCHER32_MODULE) sum2 -= FLETCHER32_MODULE;
+        s1 += data[0];
+        if(s1 >= FLETCHER32_MODULE) s1 -= FLETCHER32_MODULE;
+        s2 += s1;
+        if(s2 >= FLETCHER32_MODULE) s2 -= FLETCHER32_MODULE;
 
-        ctx->sum1 = sum1 & 0xFFFF;
-        ctx->sum2 = sum2 & 0xFFFF;
-        return 0;
+        *sum1 = s1 & 0xFFFF;
+        *sum2 = s2 & 0xFFFF;
+        return;
     }
 
     /* in case short lengths are provided, keep it somewhat fast */
@@ -114,14 +129,14 @@ AARU_EXPORT int AARU_CALL fletcher32_update(fletcher32_ctx *ctx, const uint8_t *
     {
         while(len--)
         {
-            sum1 += *data++;
-            sum2 += sum1;
+            s1 += *data++;
+            s2 += s1;
         }
-        if(sum1 >= FLETCHER32_MODULE) sum1 -= FLETCHER32_MODULE;
-        sum2 %= FLETCHER32_MODULE; /* only added so many FLETCHER32_MODULE's */
-        ctx->sum1 = sum1 & 0xFFFF;
-        ctx->sum2 = sum2 & 0xFFFF;
-        return 0;
+        if(s1 >= FLETCHER32_MODULE) s1 -= FLETCHER32_MODULE;
+        s2 %= FLETCHER32_MODULE; /* only added so many FLETCHER32_MODULE's */
+        *sum1 = s1 & 0xFFFF;
+        *sum2 = s2 & 0xFFFF;
+        return;
     }
 
     /* do length NMAX blocks -- requires just one modulo operation */
@@ -130,44 +145,44 @@ AARU_EXPORT int AARU_CALL fletcher32_update(fletcher32_ctx *ctx, const uint8_t *
         len -= NMAX;
         n = NMAX / 16; /* NMAX is divisible by 16 */
         do {
-            sum1 += data[0];
-            sum2 += sum1;
-            sum1 += data[0 + 1];
-            sum2 += sum1;
-            sum1 += data[0 + 2];
-            sum2 += sum1;
-            sum1 += data[0 + 2 + 1];
-            sum2 += sum1;
-            sum1 += data[0 + 4];
-            sum2 += sum1;
-            sum1 += data[0 + 4 + 1];
-            sum2 += sum1;
-            sum1 += data[0 + 4 + 2];
-            sum2 += sum1;
-            sum1 += data[0 + 4 + 2 + 1];
-            sum2 += sum1;
-            sum1 += data[8];
-            sum2 += sum1;
-            sum1 += data[8 + 1];
-            sum2 += sum1;
-            sum1 += data[8 + 2];
-            sum2 += sum1;
-            sum1 += data[8 + 2 + 1];
-            sum2 += sum1;
-            sum1 += data[8 + 4];
-            sum2 += sum1;
-            sum1 += data[8 + 4 + 1];
-            sum2 += sum1;
-            sum1 += data[8 + 4 + 2];
-            sum2 += sum1;
-            sum1 += data[8 + 4 + 2 + 1];
-            sum2 += sum1;
+            s1 += data[0];
+            s2 += s1;
+            s1 += data[0 + 1];
+            s2 += s1;
+            s1 += data[0 + 2];
+            s2 += s1;
+            s1 += data[0 + 2 + 1];
+            s2 += s1;
+            s1 += data[0 + 4];
+            s2 += s1;
+            s1 += data[0 + 4 + 1];
+            s2 += s1;
+            s1 += data[0 + 4 + 2];
+            s2 += s1;
+            s1 += data[0 + 4 + 2 + 1];
+            s2 += s1;
+            s1 += data[8];
+            s2 += s1;
+            s1 += data[8 + 1];
+            s2 += s1;
+            s1 += data[8 + 2];
+            s2 += s1;
+            s1 += data[8 + 2 + 1];
+            s2 += s1;
+            s1 += data[8 + 4];
+            s2 += s1;
+            s1 += data[8 + 4 + 1];
+            s2 += s1;
+            s1 += data[8 + 4 + 2];
+            s2 += s1;
+            s1 += data[8 + 4 + 2 + 1];
+            s2 += s1;
 
             /* 16 sums unrolled */
             data += 16;
         } while(--n);
-        sum1 %= FLETCHER32_MODULE;
-        sum2 %= FLETCHER32_MODULE;
+        s1 %= FLETCHER32_MODULE;
+        s2 %= FLETCHER32_MODULE;
     }
 
     /* do remaining bytes (less than NMAX, still just one modulo) */
@@ -176,53 +191,52 @@ AARU_EXPORT int AARU_CALL fletcher32_update(fletcher32_ctx *ctx, const uint8_t *
         while(len >= 16)
         {
             len -= 16;
-            sum1 += data[0];
-            sum2 += sum1;
-            sum1 += data[0 + 1];
-            sum2 += sum1;
-            sum1 += data[0 + 2];
-            sum2 += sum1;
-            sum1 += data[0 + 2 + 1];
-            sum2 += sum1;
-            sum1 += data[0 + 4];
-            sum2 += sum1;
-            sum1 += data[0 + 4 + 1];
-            sum2 += sum1;
-            sum1 += data[0 + 4 + 2];
-            sum2 += sum1;
-            sum1 += data[0 + 4 + 2 + 1];
-            sum2 += sum1;
-            sum1 += data[8];
-            sum2 += sum1;
-            sum1 += data[8 + 1];
-            sum2 += sum1;
-            sum1 += data[8 + 2];
-            sum2 += sum1;
-            sum1 += data[8 + 2 + 1];
-            sum2 += sum1;
-            sum1 += data[8 + 4];
-            sum2 += sum1;
-            sum1 += data[8 + 4 + 1];
-            sum2 += sum1;
-            sum1 += data[8 + 4 + 2];
-            sum2 += sum1;
-            sum1 += data[8 + 4 + 2 + 1];
-            sum2 += sum1;
+            s1 += data[0];
+            s2 += s1;
+            s1 += data[0 + 1];
+            s2 += s1;
+            s1 += data[0 + 2];
+            s2 += s1;
+            s1 += data[0 + 2 + 1];
+            s2 += s1;
+            s1 += data[0 + 4];
+            s2 += s1;
+            s1 += data[0 + 4 + 1];
+            s2 += s1;
+            s1 += data[0 + 4 + 2];
+            s2 += s1;
+            s1 += data[0 + 4 + 2 + 1];
+            s2 += s1;
+            s1 += data[8];
+            s2 += s1;
+            s1 += data[8 + 1];
+            s2 += s1;
+            s1 += data[8 + 2];
+            s2 += s1;
+            s1 += data[8 + 2 + 1];
+            s2 += s1;
+            s1 += data[8 + 4];
+            s2 += s1;
+            s1 += data[8 + 4 + 1];
+            s2 += s1;
+            s1 += data[8 + 4 + 2];
+            s2 += s1;
+            s1 += data[8 + 4 + 2 + 1];
+            s2 += s1;
 
             data += 16;
         }
         while(len--)
         {
-            sum1 += *data++;
-            sum2 += sum1;
+            s1 += *data++;
+            s2 += s1;
         }
-        sum1 %= FLETCHER32_MODULE;
-        sum2 %= FLETCHER32_MODULE;
+        s1 %= FLETCHER32_MODULE;
+        s2 %= FLETCHER32_MODULE;
     }
 
-    ctx->sum1 = sum1 & 0xFFFF;
-    ctx->sum2 = sum2 & 0xFFFF;
-    return 0;
+    *sum1 = s1 & 0xFFFF;
+    *sum2 = s2 & 0xFFFF;
 }
 
 /**

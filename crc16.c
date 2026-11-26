@@ -74,6 +74,22 @@ defined(__i386__) || defined(__THW_INTEL) || defined(_M_IX86)
     if(have_neon()) return crc16_update_vmull(ctx, data, len);
 #endif
 
+    crc16_slicing(&ctx->crc, data, len);
+
+    return 0;
+}
+
+/**
+ * @brief Computes the CRC-16 (IBM polynomial) checksum using the portable slicing-by-8 algorithm.
+ *
+ * This is the non-SIMD implementation used when no accelerated path is available.
+ *
+ * @param previous_crc A pointer to the previous CRC-16 value, and where the updated value gets stored.
+ * @param data The pointer to the data buffer.
+ * @param len The length of the data in bytes.
+ */
+AARU_EXPORT void AARU_CALL crc16_slicing(uint16_t *previous_crc, const uint8_t *data, uint32_t len)
+{
     uint16_t        crc;
     const uint32_t *current;
     const uint8_t * current_char     = data;
@@ -81,7 +97,7 @@ defined(__i386__) || defined(__THW_INTEL) || defined(_M_IX86)
     const size_t    bytes_at_once    = 8 * unroll;
     uintptr_t       unaligned_length = (4 - (((uintptr_t)current_char) & 3)) & 3;
 
-    crc = ctx->crc;
+    crc = *previous_crc;
 
     while((len != 0) && (unaligned_length != 0))
     {
@@ -113,8 +129,7 @@ defined(__i386__) || defined(__THW_INTEL) || defined(_M_IX86)
 
     while(len-- != 0) crc = (crc >> 8) ^ crc16_table[0][(crc & 0xFF) ^ *current_char++];
 
-    ctx->crc = crc;
-    return 0;
+    *previous_crc = crc;
 }
 
 /**

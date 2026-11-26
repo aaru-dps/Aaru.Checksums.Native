@@ -73,6 +73,19 @@ TEST_F(fletcher32Fixture, fletcher32_auto)
     EXPECT_EQ(fletcher, EXPECTED_FLETCHER32);
 }
 
+TEST_F(fletcher32Fixture, fletcher32_slicing)
+{
+    uint16_t sum1 = 0xFFFF;
+    uint16_t sum2 = 0xFFFF;
+    uint32_t fletcher;
+
+    fletcher32_slicing(&sum1, &sum2, buffer, 1048576);
+
+    fletcher = (uint32_t)((sum2 << 16) | sum1);
+
+    EXPECT_EQ(fletcher, EXPECTED_FLETCHER32);
+}
+
 TEST_F(fletcher32Fixture, fletcher32_auto_misaligned)
 {
     fletcher32_ctx *ctx = fletcher32_init();
@@ -82,6 +95,19 @@ TEST_F(fletcher32Fixture, fletcher32_auto_misaligned)
 
     fletcher32_update(ctx, buffer_misaligned + 1, 1048576);
     fletcher32_final(ctx, &fletcher);
+
+    EXPECT_EQ(fletcher, EXPECTED_FLETCHER32);
+}
+
+TEST_F(fletcher32Fixture, fletcher32_slicing_misaligned)
+{
+    uint16_t sum1 = 0xFFFF;
+    uint16_t sum2 = 0xFFFF;
+    uint32_t fletcher;
+
+    fletcher32_slicing(&sum1, &sum2, buffer_misaligned + 1, 1048576);
+
+    fletcher = (uint32_t)((sum2 << 16) | sum1);
 
     EXPECT_EQ(fletcher, EXPECTED_FLETCHER32);
 }
@@ -99,6 +125,19 @@ TEST_F(fletcher32Fixture, fletcher32_auto_15bytes)
     EXPECT_EQ(fletcher, EXPECTED_FLETCHER32_15BYTES);
 }
 
+TEST_F(fletcher32Fixture, fletcher32_slicing_15bytes)
+{
+    uint16_t sum1 = 0xFFFF;
+    uint16_t sum2 = 0xFFFF;
+    uint32_t fletcher;
+
+    fletcher32_slicing(&sum1, &sum2, buffer, 15);
+
+    fletcher = (uint32_t)((sum2 << 16) | sum1);
+
+    EXPECT_EQ(fletcher, EXPECTED_FLETCHER32_15BYTES);
+}
+
 TEST_F(fletcher32Fixture, fletcher32_auto_31bytes)
 {
     fletcher32_ctx *ctx = fletcher32_init();
@@ -108,6 +147,19 @@ TEST_F(fletcher32Fixture, fletcher32_auto_31bytes)
 
     fletcher32_update(ctx, buffer, 31);
     fletcher32_final(ctx, &fletcher);
+
+    EXPECT_EQ(fletcher, EXPECTED_FLETCHER32_31BYTES);
+}
+
+TEST_F(fletcher32Fixture, fletcher32_slicing_31bytes)
+{
+    uint16_t sum1 = 0xFFFF;
+    uint16_t sum2 = 0xFFFF;
+    uint32_t fletcher;
+
+    fletcher32_slicing(&sum1, &sum2, buffer, 31);
+
+    fletcher = (uint32_t)((sum2 << 16) | sum1);
 
     EXPECT_EQ(fletcher, EXPECTED_FLETCHER32_31BYTES);
 }
@@ -125,6 +177,19 @@ TEST_F(fletcher32Fixture, fletcher32_auto_63bytes)
     EXPECT_EQ(fletcher, EXPECTED_FLETCHER32_63BYTES);
 }
 
+TEST_F(fletcher32Fixture, fletcher32_slicing_63bytes)
+{
+    uint16_t sum1 = 0xFFFF;
+    uint16_t sum2 = 0xFFFF;
+    uint32_t fletcher;
+
+    fletcher32_slicing(&sum1, &sum2, buffer, 63);
+
+    fletcher = (uint32_t)((sum2 << 16) | sum1);
+
+    EXPECT_EQ(fletcher, EXPECTED_FLETCHER32_63BYTES);
+}
+
 TEST_F(fletcher32Fixture, fletcher32_auto_2352bytes)
 {
     fletcher32_ctx *ctx = fletcher32_init();
@@ -134,6 +199,19 @@ TEST_F(fletcher32Fixture, fletcher32_auto_2352bytes)
 
     fletcher32_update(ctx, buffer, 2352);
     fletcher32_final(ctx, &fletcher);
+
+    EXPECT_EQ(fletcher, EXPECTED_FLETCHER32_2352BYTES);
+}
+
+TEST_F(fletcher32Fixture, fletcher32_slicing_2352bytes)
+{
+    uint16_t sum1 = 0xFFFF;
+    uint16_t sum2 = 0xFFFF;
+    uint32_t fletcher;
+
+    fletcher32_slicing(&sum1, &sum2, buffer, 2352);
+
+    fletcher = (uint32_t)((sum2 << 16) | sum1);
 
     EXPECT_EQ(fletcher, EXPECTED_FLETCHER32_2352BYTES);
 }

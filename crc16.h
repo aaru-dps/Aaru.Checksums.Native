@@ -183,6 +183,7 @@ AARU_EXPORT crc16_ctx *AARU_CALL crc16_init();
 AARU_EXPORT int AARU_CALL        crc16_update(crc16_ctx *ctx, const uint8_t *data, uint32_t len);
 AARU_EXPORT int AARU_CALL        crc16_final(crc16_ctx *ctx, uint16_t *crc);
 AARU_EXPORT void AARU_CALL       crc16_free(crc16_ctx *ctx);
+AARU_EXPORT void AARU_CALL       crc16_slicing(uint16_t *previous_crc, const uint8_t *data, uint32_t len);
 
 #if defined(__x86_64__) || defined(__amd64) || defined(_M_AMD64) || defined(_M_X64) || defined(__I386__) || \
 defined(__i386__) || defined(__THW_INTEL) || defined(_M_IX86)
